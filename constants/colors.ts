@@ -1,0 +1,21 @@
+export default {
+  light: {
+    text: "#2D2D2D",
+    textSecondary: "#6B6B6B",
+    background: "#FFF8F2",
+    surface: "#FFFFFF",
+    tint: "#4A7C59",
+    tintLight: "#E8F0E4",
+    tintMedium: "#C5DBC0",
+    accent: "#E8A838",
+    accentLight: "#FFF3D6",
+    border: "#E8E0D8",
+    cardBg: "#F5F0EA",
+    greenGradientStart: "#D4E8CD",
+    greenGradientEnd: "#E8F0E4",
+    tabIconDefault: "#A0A0A0",
+    tabIconSelected: "#4A7C59",
+    danger: "#E85454",
+    white: "#FFFFFF",
+  },
+};
