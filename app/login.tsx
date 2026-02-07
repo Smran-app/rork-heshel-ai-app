@@ -103,7 +103,20 @@ export default function LoginScreen() {
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Something went wrong";
-      Alert.alert(mode === "signup" ? "Sign Up Failed" : "Sign In Failed", message);
+      const lowerMsg = message.toLowerCase();
+      if (mode === "login" && (lowerMsg.includes("invalid login") || lowerMsg.includes("invalid credentials"))) {
+        Alert.alert(
+          "Sign In Failed",
+          "Invalid email or password. If you previously signed in with Google or Apple, please use that method instead.",
+        );
+      } else if (mode === "signup" && lowerMsg.includes("already registered")) {
+        Alert.alert(
+          "Account Exists",
+          "This email is already registered. Try signing in, or use Google/Apple if you originally signed up that way.",
+        );
+      } else {
+        Alert.alert(mode === "signup" ? "Sign Up Failed" : "Sign In Failed", message);
+      }
     } finally {
       setLoadingProvider(null);
     }
