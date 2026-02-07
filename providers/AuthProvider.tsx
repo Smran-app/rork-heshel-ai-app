@@ -141,6 +141,37 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     }
   }, []);
 
+  const signUpWithEmail = useCallback(async (email: string, password: string, name: string) => {
+    console.log("[Auth] Starting email sign-up for:", email);
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name, display_name: name },
+      },
+    });
+    if (error) {
+      console.error("[Auth] Email sign-up error:", error.message);
+      throw error;
+    }
+    console.log("[Auth] Email sign-up result:", data.session ? "session created" : "confirmation needed");
+    return data;
+  }, []);
+
+  const signInWithEmail = useCallback(async (email: string, password: string) => {
+    console.log("[Auth] Starting email sign-in for:", email);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) {
+      console.error("[Auth] Email sign-in error:", error.message);
+      throw error;
+    }
+    console.log("[Auth] Email sign-in successful");
+    return data;
+  }, []);
+
   const signOut = useCallback(async () => {
     console.log("[Auth] Signing out");
     const { error } = await supabase.auth.signOut();
@@ -157,6 +188,8 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     isAuthenticated: !!session,
     signInWithGoogle,
     signInWithApple,
+    signUpWithEmail,
+    signInWithEmail,
     signOut,
   };
 });
