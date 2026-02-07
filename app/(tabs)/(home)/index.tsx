@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import Colors from "@/constants/colors";
 import { kitchenIngredients, savedRecipes } from "@/mocks/ingredients";
+import { useAuth } from "@/providers/AuthProvider";
 
 const INGREDIENT_CARD_WIDTH = 90;
 
@@ -27,6 +28,8 @@ function getGreeting(): string {
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  const firstName = user?.user_metadata?.full_name?.split(" ")[0] ?? "Chef";
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
@@ -56,7 +59,7 @@ export default function HomeScreen() {
         >
           <View style={styles.headerRow}>
             <View style={styles.headerText}>
-              <Text style={styles.greeting}>{getGreeting()}, Chef</Text>
+              <Text style={styles.greeting}>{getGreeting()}, {firstName}</Text>
               <Text style={styles.subtitle}>
                 What would you like to cook today?
               </Text>
