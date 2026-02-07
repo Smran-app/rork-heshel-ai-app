@@ -22,7 +22,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "app.rork.heshel_ai_app"
+      "package": "com.heshel.app"
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
