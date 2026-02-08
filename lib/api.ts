@@ -64,6 +64,8 @@ async function authFetch(endpoint: string, options?: RequestInit): Promise<Respo
     throw new Error(`API error ${response.status}: ${text}`);
   }
 
+  console.log("response",response)
+
   return response;
 }
 
