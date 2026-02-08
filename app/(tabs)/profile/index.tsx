@@ -1,10 +1,12 @@
 import { Stack } from "expo-router";
-import { ChevronRight, Settings, Bell, Heart, CircleHelp, LogOut } from "lucide-react-native";
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from "react-native";
+import { ChevronRight, Settings, Bell, Heart, CircleHelp, LogOut, ChefHat, Leaf, Flame, Calendar, RefreshCw } from "lucide-react-native";
+import React, { useCallback } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, RefreshControl } from "react-native";
+import { useQuery } from "@tanstack/react-query";
 
 import Colors from "@/constants/colors";
 import { useAuth } from "@/providers/AuthProvider";
+import { fetchUserProfile } from "@/lib/api";
 
 const menuItems = [
   { icon: Settings, label: "Preferences", id: "prefs" },
@@ -16,9 +18,27 @@ const menuItems = [
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
 
-  const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Chef";
-  const displayEmail = user?.email ?? "";
+  const profileQuery = useQuery({
+    queryKey: ["userProfile"],
+    queryFn: fetchUserProfile,
+    enabled: !!user,
+  });
+
+  const profile = profileQuery.data;
+  const counts = profile?.counts;
+
+  const displayName = profile?.user?.user_metadata?.full_name
+    ?? profile?.user?.user_metadata?.display_name
+    ?? user?.user_metadata?.full_name
+    ?? user?.email?.split("@")[0]
+    ?? "Chef";
+  const displayEmail = profile?.user?.email ?? user?.email ?? "";
   const initials = displayName.charAt(0).toUpperCase();
+
+  const provider = profile?.user?.app_metadata?.provider ?? "email";
+  const memberSince = profile?.user?.created_at
+    ? new Date(profile.user.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+    : null;
 
   const handleSignOut = async () => {
     try {
@@ -28,31 +48,74 @@ export default function ProfileScreen() {
     }
   };
 
+  const onRefresh = useCallback(() => {
+    profileQuery.refetch();
+  }, [profileQuery]);
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: "Profile" }} />
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          <RefreshControl
+            refreshing={profileQuery.isRefetching}
+            onRefresh={onRefresh}
+            tintColor={Colors.light.tint}
+          />
+        }
+      >
         <View style={styles.avatarSection}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{initials}</Text>
           </View>
           <Text style={styles.name}>{displayName}</Text>
           <Text style={styles.email}>{displayEmail}</Text>
+          {memberSince && (
+            <View style={styles.memberRow}>
+              <Calendar size={12} color={Colors.light.tabIconDefault} />
+              <Text style={styles.memberSince}>Member since {memberSince}</Text>
+            </View>
+          )}
+          {provider !== "email" && (
+            <View style={styles.providerBadge}>
+              <Text style={styles.providerText}>
+                Signed in via {provider.charAt(0).toUpperCase() + provider.slice(1)}
+              </Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>6</Text>
-            <Text style={styles.statLabel}>Ingredients</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>2</Text>
-            <Text style={styles.statLabel}>Saved</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>0</Text>
-            <Text style={styles.statLabel}>Cooked</Text>
-          </View>
+          {profileQuery.isLoading ? (
+            <View style={styles.statsLoading}>
+              <ActivityIndicator size="small" color={Colors.light.tint} />
+            </View>
+          ) : (
+            <>
+              <View style={styles.statCard}>
+                <View style={[styles.statIconWrap, { backgroundColor: Colors.light.tintLight }]}>
+                  <Leaf size={18} color={Colors.light.tint} />
+                </View>
+                <Text style={styles.statNumber}>{counts?.ingredients ?? 0}</Text>
+                <Text style={styles.statLabel}>Ingredients</Text>
+              </View>
+              <View style={styles.statCard}>
+                <View style={[styles.statIconWrap, { backgroundColor: Colors.light.accentLight }]}>
+                  <ChefHat size={18} color={Colors.light.accent} />
+                </View>
+                <Text style={styles.statNumber}>{counts?.recipes ?? 0}</Text>
+                <Text style={styles.statLabel}>Recipes</Text>
+              </View>
+              <View style={styles.statCard}>
+                <View style={[styles.statIconWrap, { backgroundColor: "#FDEAEA" }]}>
+                  <Flame size={18} color={Colors.light.danger} />
+                </View>
+                <Text style={styles.statNumber}>{counts?.cooked ?? 0}</Text>
+                <Text style={styles.statLabel}>Cooked</Text>
+              </View>
+            </>
+          )}
         </View>
 
         <View style={styles.menuSection}>
@@ -121,11 +184,39 @@ const styles = StyleSheet.create({
     color: Colors.light.textSecondary,
     marginTop: 2,
   },
+  memberRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 6,
+  },
+  memberSince: {
+    fontSize: 12,
+    color: Colors.light.tabIconDefault,
+  },
+  providerBadge: {
+    marginTop: 8,
+    backgroundColor: Colors.light.tintLight,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  providerText: {
+    fontSize: 11,
+    fontWeight: "600" as const,
+    color: Colors.light.tint,
+  },
   statsRow: {
     flexDirection: "row",
     paddingHorizontal: 20,
     gap: 12,
     marginBottom: 24,
+  },
+  statsLoading: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 30,
   },
   statCard: {
     flex: 1,
@@ -139,10 +230,18 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 1,
   },
+  statIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
   statNumber: {
     fontSize: 22,
     fontWeight: "800" as const,
-    color: Colors.light.tint,
+    color: Colors.light.text,
   },
   statLabel: {
     fontSize: 12,

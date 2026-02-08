@@ -159,6 +159,40 @@ export async function fetchVideoInfo(videoId: string): Promise<VideoInfo> {
   return data;
 }
 
+export interface UserProfile {
+  user: {
+    id: string;
+    email: string;
+    email_confirmed_at: string;
+    last_sign_in_at: string;
+    created_at: string;
+    updated_at: string;
+    app_metadata: {
+      provider: string;
+      providers: string[];
+    };
+    user_metadata: {
+      display_name?: string;
+      full_name?: string;
+      email?: string;
+      email_verified?: boolean;
+    };
+  };
+  counts: {
+    recipes: number;
+    ingredients: number;
+    cooked: number;
+  };
+}
+
+export async function fetchUserProfile(): Promise<UserProfile> {
+  console.log("[API] Fetching user profile");
+  const response = await authFetch("/users/me");
+  const data = await response.json();
+  console.log("[API] Fetched user profile:", data.user?.email);
+  return data;
+}
+
 export async function processVideoCaption(videoId: string): Promise<any> {
   console.log("[API] Processing captions for:", videoId);
   const response = await authFetch(`/captions?video_id=${videoId}&analyze=true`, {
