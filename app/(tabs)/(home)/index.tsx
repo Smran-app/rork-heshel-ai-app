@@ -95,7 +95,7 @@ export default function HomeScreen() {
             />
           </View>
 
-          <TouchableOpacity activeOpacity={0.85} testID="cook-suggestion-card">
+          <TouchableOpacity activeOpacity={0.85} testID="cook-suggestion-card" onPress={() => router.push("/cook-feed" as any)}>
             <LinearGradient
               colors={["#C5DBC0", "#D9ECCC", "#E8F5E0"]}
               start={{ x: 0, y: 0 }}

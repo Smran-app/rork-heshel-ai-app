@@ -193,6 +193,34 @@ export async function fetchUserProfile(): Promise<UserProfile> {
   return data;
 }
 
+export interface FeedRecipe {
+  id: number;
+  name: string;
+  description: string;
+  source: string;
+  ingredients: RecipeIngredient[];
+  technique_hints: string[];
+  cuisine_type: string;
+  effort_level: string;
+  vibe: string;
+  video: RecipeVideo | null;
+}
+
+export async function fetchFeedRecipes(
+  vibe: string = "comfort",
+  effort: string = "low",
+  topK: number = 10
+): Promise<FeedRecipe[]> {
+  console.log("[API] Fetching feed recipes", { vibe, effort, topK });
+  const response = await authFetch(
+    `/search/feed?vibe=${encodeURIComponent(vibe)}&effort=${encodeURIComponent(effort)}&top_k=${topK}`,
+    { method: "POST" }
+  );
+  const data = await response.json();
+  console.log("[API] Fetched", data.length, "feed recipes");
+  return data;
+}
+
 export async function processVideoCaption(videoId: string): Promise<any> {
   console.log("[API] Processing captions for:", videoId);
   const response = await authFetch(`/captions?video_id=${videoId}&analyze=true`, {
