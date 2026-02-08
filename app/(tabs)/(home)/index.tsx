@@ -1,7 +1,7 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { ChevronRight, Play, Flame } from "lucide-react-native";
-import React, { useRef, useEffect } from "react";
+import { ChevronRight, Play, Flame, Plus, Youtube } from "lucide-react-native";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import { useRouter } from "expo-router";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/providers/AuthProvider";
 import { fetchIngredients, fetchRecipes, APIIngredient, APIRecipe } from "@/lib/api";
+import AddRecipeModal from "@/components/AddRecipeModal";
 
 const INGREDIENT_CARD_WIDTH = 90;
 
@@ -36,6 +37,15 @@ export default function HomeScreen() {
   const firstName = user?.user_metadata?.full_name?.split(" ")[0] ?? "Chef";
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
+  const [showAddModal, setShowAddModal] = useState<boolean>(false);
+
+  const handleOpenModal = useCallback(() => {
+    setShowAddModal(true);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setShowAddModal(false);
+  }, []);
 
   const { data: ingredients = [], isLoading: ingredientsLoading } = useQuery<APIIngredient[]>({
     queryKey: ["ingredients"],
@@ -156,6 +166,33 @@ export default function HomeScreen() {
             )}
           </View>
 
+          <TouchableOpacity
+            style={styles.addRecipeCard}
+            activeOpacity={0.85}
+            onPress={handleOpenModal}
+            testID="add-recipe-btn"
+          >
+            <LinearGradient
+              colors={["#FFF3D6", "#FFE8B8", "#FFDDA0"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.addRecipeGradient}
+            >
+              <View style={styles.addRecipeIconWrap}>
+                <Youtube size={22} color={Colors.light.white} />
+              </View>
+              <View style={styles.addRecipeContent}>
+                <Text style={styles.addRecipeTitle}>Add a Recipe</Text>
+                <Text style={styles.addRecipeSubtitle}>
+                  Paste YouTube links to save recipes
+                </Text>
+              </View>
+              <View style={styles.addRecipePlusWrap}>
+                <Plus size={20} color={Colors.light.accent} />
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Your Recipes</Text>
@@ -245,6 +282,11 @@ export default function HomeScreen() {
           </LinearGradient>
         </Animated.View>
       </ScrollView>
+
+      <AddRecipeModal
+        visible={showAddModal}
+        onClose={handleCloseModal}
+      />
     </View>
   );
 }
@@ -510,5 +552,44 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.light.textSecondary,
     paddingVertical: 20,
+  },
+  addRecipeCard: {
+    marginBottom: 24,
+  },
+  addRecipeGradient: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    borderRadius: 18,
+    padding: 16,
+    gap: 14,
+  },
+  addRecipeIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: Colors.light.accent,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+  },
+  addRecipeContent: {
+    flex: 1,
+  },
+  addRecipeTitle: {
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: Colors.light.text,
+  },
+  addRecipeSubtitle: {
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+    marginTop: 2,
+  },
+  addRecipePlusWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(232,168,56,0.15)",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
 });

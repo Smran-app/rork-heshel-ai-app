@@ -6,6 +6,8 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { AuthProvider, useAuth } from "@/providers/AuthProvider";
+import { RecipeQueueProvider } from "@/providers/RecipeQueueProvider";
+import ProcessingQueue from "@/components/ProcessingQueue";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -49,9 +51,12 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
-      <GestureHandlerRootView>
+      <GestureHandlerRootView style={{ flex: 1 }}>
         <AuthProvider>
-          <RootLayoutNav />
+          <RecipeQueueProvider>
+            <RootLayoutNav />
+            <ProcessingQueue />
+          </RecipeQueueProvider>
           <StatusBar style="dark" />
         </AuthProvider>
       </GestureHandlerRootView>

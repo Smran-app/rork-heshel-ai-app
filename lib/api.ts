@@ -141,3 +141,30 @@ export async function fetchRecipes(): Promise<APIRecipe[]> {
   console.log("[API] Fetched", data.length, "recipes");
   return data;
 }
+
+export interface VideoInfo {
+  video_id: string;
+  title: string;
+  author_name: string;
+  thumbnail_url: string;
+  link: string;
+  html: string;
+}
+
+export async function fetchVideoInfo(videoId: string): Promise<VideoInfo> {
+  console.log("[API] Fetching video info for:", videoId);
+  const response = await authFetch(`/recipes/from-video?video_id=${videoId}`);
+  const data = await response.json();
+  console.log("[API] Video info:", data.title);
+  return data;
+}
+
+export async function processVideoCaption(videoId: string): Promise<any> {
+  console.log("[API] Processing captions for:", videoId);
+  const response = await authFetch(`/captions?video_id=${videoId}&analyze=true`, {
+    method: "POST",
+  });
+  const data = await response.json();
+  console.log("[API] Caption processing complete for:", videoId);
+  return data;
+}
