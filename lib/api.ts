@@ -197,13 +197,37 @@ export interface FeedRecipe {
   id: number;
   name: string;
   description: string;
-  source: string;
+  video_id?: string;
   ingredients: RecipeIngredient[];
   technique_hints: string[];
   cuisine_type: string;
   effort_level: string;
   vibe: string;
   video: RecipeVideo | null;
+  distance?: number;
+  match_count?: number;
+}
+
+interface FeedResultItem {
+  distance: number;
+  embedding_id: string;
+  meta: {
+    content: string;
+    metadata: string;
+    recipe_id: number;
+  };
+  recipe: {
+    id: number;
+    name: string;
+    description: string;
+    video_id?: string;
+    ingredients: RecipeIngredient[];
+    technique_hints: string[];
+    cuisine_type: string;
+    effort_level: string;
+    vibe: string;
+  };
+  match_count: number;
 }
 
 export async function fetchFeedRecipes(
@@ -217,8 +241,41 @@ export async function fetchFeedRecipes(
     { method: "POST" }
   );
   const data = await response.json();
-  console.log("[API] Fetched", data.length, "feed recipes");
-  return data;
+
+  const results: FeedResultItem[] = data?.results ?? data;
+  console.log("[API] Raw feed response keys:", Object.keys(data ?? {}));
+
+  const recipes: FeedRecipe[] = (Array.isArray(results) ? results : []).map((item: FeedResultItem) => {
+    const r = item.recipe;
+    const videoId = r.video_id ?? null;
+    const video: RecipeVideo | null = videoId
+      ? {
+          video_id: videoId,
+          title: r.name,
+          author_name: "",
+          thumbnail_url: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+          link: `https://www.youtube.com/watch?v=${videoId}`,
+        }
+      : null;
+
+    return {
+      id: r.id,
+      name: r.name,
+      description: r.description,
+      video_id: r.video_id,
+      ingredients: r.ingredients ?? [],
+      technique_hints: r.technique_hints ?? [],
+      cuisine_type: r.cuisine_type ?? "",
+      effort_level: r.effort_level ?? "",
+      vibe: r.vibe ?? "",
+      video,
+      distance: item.distance,
+      match_count: item.match_count,
+    };
+  });
+
+  console.log("[API] Parsed", recipes.length, "feed recipes");
+  return recipes;
 }
 
 export async function processVideoCaption(videoId: string): Promise<any> {
