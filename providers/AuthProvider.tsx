@@ -4,6 +4,7 @@ import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import { saveToken, clearToken } from "@/lib/api";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -22,6 +23,9 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
       console.log("[Auth] Initial session:", s ? "found" : "none");
       setSession(s);
       setUser(s?.user ?? null);
+      if (s?.access_token) {
+        saveToken(s.access_token);
+      }
       setIsLoading(false);
     });
 
@@ -30,6 +34,11 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
         console.log("[Auth] State changed:", _event);
         setSession(s);
         setUser(s?.user ?? null);
+        if (s?.access_token) {
+          saveToken(s.access_token);
+        } else if (_event === "SIGNED_OUT") {
+          clearToken();
+        }
         setIsLoading(false);
       }
     );
@@ -174,6 +183,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const signOut = useCallback(async () => {
     console.log("[Auth] Signing out");
+    await clearToken();
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error("[Auth] Sign out error:", error.message);

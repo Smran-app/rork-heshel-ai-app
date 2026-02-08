@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { Image } from "expo-image";
-import { Plus, Trash2 } from "lucide-react-native";
-import React, { useState } from "react";
+import { Plus, RefreshCw } from "lucide-react-native";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,22 +9,70 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
+import { useQuery } from "@tanstack/react-query";
 
 import Colors from "@/constants/colors";
-import { kitchenIngredients, Ingredient } from "@/mocks/ingredients";
+import { fetchIngredients, APIIngredient } from "@/lib/api";
 
 export default function KitchenScreen() {
-  const [ingredients, setIngredients] = useState<Ingredient[]>(kitchenIngredients);
   const [search, setSearch] = useState<string>("");
 
+  const {
+    data: ingredients = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isRefetching,
+  } = useQuery<APIIngredient[]>({
+    queryKey: ["ingredients"],
+    queryFn: fetchIngredients,
+  });
+
   const filtered = ingredients.filter((i) =>
-    i.name.toLowerCase().includes(search.toLowerCase())
+    (i.global?.name ?? i.name).toLowerCase().includes(search.toLowerCase())
   );
 
-  const removeIngredient = (id: string) => {
-    setIngredients((prev) => prev.filter((i) => i.id !== id));
-  };
+  const formatQuantity = useCallback((item: APIIngredient) => {
+    return `${item.quantity} ${item.unit}`;
+  }, []);
+
+  const getImageUri = useCallback((item: APIIngredient) => {
+    return item.global?.image ?? undefined;
+  }, []);
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen options={{ title: "My Kitchen" }} />
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={Colors.light.tint} />
+          <Text style={styles.loadingText}>Loading ingredients...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen options={{ title: "My Kitchen" }} />
+        <View style={styles.centered}>
+          <Text style={styles.errorText}>Failed to load ingredients</Text>
+          <Text style={styles.errorDetail}>
+            {error instanceof Error ? error.message : "Unknown error"}
+          </Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => refetch()}>
+            <RefreshCw size={16} color={Colors.light.white} />
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -41,27 +89,40 @@ export default function KitchenScreen() {
       </View>
       <FlatList
         data={filtered}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            tintColor={Colors.light.tint}
+          />
+        }
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Image
-              source={{ uri: item.image }}
-              style={styles.image}
-              contentFit="cover"
-            />
+            {getImageUri(item) ? (
+              <Image
+                source={{ uri: getImageUri(item) }}
+                style={styles.image}
+                contentFit="cover"
+              />
+            ) : (
+              <View style={[styles.image, styles.imagePlaceholder]}>
+                <Text style={styles.imagePlaceholderText}>
+                  {(item.global?.name ?? item.name).charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
             <View style={styles.info}>
-              <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.qty}>{item.quantity}</Text>
+              <Text style={styles.name}>{item.global?.name ?? item.name}</Text>
+              <Text style={styles.qty}>{formatQuantity(item)}</Text>
+              {item.global?.category ? (
+                <View style={styles.categoryBadge}>
+                  <Text style={styles.categoryText}>{item.global.category}</Text>
+                </View>
+              ) : null}
             </View>
-            <TouchableOpacity
-              style={styles.deleteBtn}
-              onPress={() => removeIngredient(item.id)}
-              testID={`delete-${item.id}`}
-            >
-              <Trash2 size={18} color={Colors.light.danger} />
-            </TouchableOpacity>
           </View>
         )}
         ListEmptyComponent={
@@ -81,6 +142,43 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.light.background,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 32,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: Colors.light.textSecondary,
+  },
+  errorText: {
+    fontSize: 17,
+    fontWeight: "600" as const,
+    color: Colors.light.text,
+    marginBottom: 6,
+  },
+  errorDetail: {
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  retryBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: Colors.light.tint,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: Colors.light.white,
   },
   searchWrap: {
     paddingHorizontal: 20,
@@ -119,6 +217,16 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     backgroundColor: Colors.light.cardBg,
   },
+  imagePlaceholder: {
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Colors.light.tint,
+  },
+  imagePlaceholderText: {
+    fontSize: 20,
+    fontWeight: "700" as const,
+    color: Colors.light.white,
+  },
   info: {
     flex: 1,
     marginLeft: 14,
@@ -133,8 +241,18 @@ const styles = StyleSheet.create({
     color: Colors.light.textSecondary,
     marginTop: 2,
   },
-  deleteBtn: {
-    padding: 8,
+  categoryBadge: {
+    marginTop: 4,
+    backgroundColor: Colors.light.cardBg,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+  },
+  categoryText: {
+    fontSize: 11,
+    color: Colors.light.textSecondary,
+    textTransform: "capitalize" as const,
   },
   empty: {
     alignItems: "center",

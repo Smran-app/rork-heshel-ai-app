@@ -10,12 +10,15 @@ import {
   TouchableOpacity,
   FlatList,
   Animated,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useQuery } from "@tanstack/react-query";
 
 import Colors from "@/constants/colors";
-import { kitchenIngredients, savedRecipes } from "@/mocks/ingredients";
+import { savedRecipes } from "@/mocks/ingredients";
 import { useAuth } from "@/providers/AuthProvider";
+import { fetchIngredients, APIIngredient } from "@/lib/api";
 
 const INGREDIENT_CARD_WIDTH = 90;
 
@@ -32,6 +35,11 @@ export default function HomeScreen() {
   const firstName = user?.user_metadata?.full_name?.split(" ")[0] ?? "Chef";
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
+
+  const { data: ingredients = [], isLoading: ingredientsLoading } = useQuery<APIIngredient[]>({
+    queryKey: ["ingredients"],
+    queryFn: fetchIngredients,
+  });
 
   useEffect(() => {
     Animated.parallel([
@@ -99,30 +107,47 @@ export default function HomeScreen() {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>What&apos;s in your kitchen?</Text>
-            <FlatList
-              data={kitchenIngredients}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.ingredientList}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.ingredientCard}
-                  activeOpacity={0.7}
-                  testID={`ingredient-${item.id}`}
-                >
-                  <View style={styles.ingredientImageWrap}>
-                    <Image
-                      source={{ uri: item.image }}
-                      style={styles.ingredientImage}
-                      contentFit="cover"
-                    />
-                  </View>
-                  <Text style={styles.ingredientName}>{item.name}</Text>
-                  <Text style={styles.ingredientQty}>{item.quantity}</Text>
-                </TouchableOpacity>
-              )}
-            />
+            {ingredientsLoading ? (
+              <View style={styles.ingredientLoading}>
+                <ActivityIndicator size="small" color={Colors.light.tint} />
+              </View>
+            ) : (
+              <FlatList
+                data={ingredients}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(item) => String(item.id)}
+                contentContainerStyle={styles.ingredientList}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.ingredientCard}
+                    activeOpacity={0.7}
+                    testID={`ingredient-${item.id}`}
+                  >
+                    <View style={styles.ingredientImageWrap}>
+                      {item.global?.image ? (
+                        <Image
+                          source={{ uri: item.global.image }}
+                          style={styles.ingredientImage}
+                          contentFit="cover"
+                        />
+                      ) : (
+                        <View style={[styles.ingredientImage, styles.ingredientPlaceholder]}>
+                          <Text style={styles.ingredientPlaceholderText}>
+                            {(item.global?.name ?? item.name).charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.ingredientName}>{item.global?.name ?? item.name}</Text>
+                    <Text style={styles.ingredientQty}>{item.quantity} {item.unit}</Text>
+                  </TouchableOpacity>
+                )}
+                ListEmptyComponent={
+                  <Text style={styles.emptyIngredients}>No ingredients yet</Text>
+                }
+              />
+            )}
           </View>
 
           <View style={styles.section}>
@@ -371,5 +396,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700" as const,
     color: Colors.light.white,
+  },
+  ingredientLoading: {
+    height: 100,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  ingredientPlaceholder: {
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Colors.light.tint,
+  },
+  ingredientPlaceholderText: {
+    fontSize: 20,
+    fontWeight: "700" as const,
+    color: Colors.light.white,
+  },
+  emptyIngredients: {
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+    paddingVertical: 20,
   },
 });
