@@ -278,6 +278,71 @@ export async function fetchFeedRecipes(
   return recipes;
 }
 
+export interface SearchResult {
+  distance: number;
+  embedding_id: string;
+  meta: {
+    content: string;
+    metadata: string;
+    recipe_id: number;
+  };
+  recipe: {
+    id: number;
+    name: string;
+    description: string;
+    video_id?: string;
+    ingredients: RecipeIngredient[];
+    technique_hints: string[];
+    cuisine_type: string;
+    effort_level: string;
+    vibe: string;
+  };
+}
+
+export async function searchRecipes(
+  query: string,
+  topK: number = 5
+): Promise<FeedRecipe[]> {
+  console.log("[API] Searching recipes with query:", query);
+  const response = await authFetch(`/search?top_k=${topK}`, {
+    method: "POST",
+    body: JSON.stringify({ query }),
+  });
+  const data = await response.json();
+  const results: SearchResult[] = data?.results ?? [];
+  console.log("[API] Search returned", results.length, "results");
+
+  const recipes: FeedRecipe[] = results.map((item) => {
+    const r = item.recipe;
+    const videoId = r.video_id ?? null;
+    const video: RecipeVideo | null = videoId
+      ? {
+          video_id: videoId,
+          title: r.name,
+          author_name: "",
+          thumbnail_url: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+          link: `https://www.youtube.com/watch?v=${videoId}`,
+        }
+      : null;
+
+    return {
+      id: r.id,
+      name: r.name,
+      description: r.description,
+      video_id: r.video_id,
+      ingredients: r.ingredients ?? [],
+      technique_hints: r.technique_hints ?? [],
+      cuisine_type: r.cuisine_type ?? "",
+      effort_level: r.effort_level ?? "",
+      vibe: r.vibe ?? "",
+      video,
+      distance: item.distance,
+    };
+  });
+
+  return recipes;
+}
+
 export async function processVideoCaption(videoId: string): Promise<any> {
   console.log("[API] Processing captions for:", videoId);
   const response = await authFetch(`/captions?video_id=${videoId}&analyze=true`, {
