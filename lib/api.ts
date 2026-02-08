@@ -76,3 +76,33 @@ export async function fetchIngredients(): Promise<APIIngredient[]> {
   console.log("[API] Fetched", data.length, "ingredients");
   return data;
 }
+
+export interface CreateIngredientPayload {
+  name: string;
+  quantity: number;
+  unit: string;
+}
+
+export interface CreateIngredientResponse {
+  ingredient: {
+    id: number;
+    name: string;
+    quantity: number;
+    unit: string;
+    user_id: string;
+    global_id: string | null;
+  };
+}
+
+export async function createIngredient(
+  payload: CreateIngredientPayload
+): Promise<CreateIngredientResponse> {
+  console.log("[API] Creating ingredient:", payload);
+  const response = await authFetch("/ingredients", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json();
+  console.log("[API] Created ingredient:", data);
+  return data;
+}
