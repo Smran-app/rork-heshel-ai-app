@@ -157,7 +157,18 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Your Recipes</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Your Recipes</Text>
+              {recipes.length > 3 ? (
+                <TouchableOpacity
+                  onPress={() => router.push("/(tabs)/save" as any)}
+                  activeOpacity={0.7}
+                  testID="see-all-recipes"
+                >
+                  <Text style={styles.seeAllText}>See all</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
             {recipesLoading ? (
               <View style={styles.ingredientLoading}>
                 <ActivityIndicator size="small" color={Colors.light.tint} />
@@ -165,7 +176,7 @@ export default function HomeScreen() {
             ) : recipes.length === 0 ? (
               <Text style={styles.emptyIngredients}>No recipes yet</Text>
             ) : (
-              recipes.map((recipe) => (
+              recipes.slice(0, 3).map((recipe) => (
                 <TouchableOpacity
                   key={recipe.id}
                   style={styles.recipeCard}
@@ -313,11 +324,21 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
+  sectionHeader: {
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "center" as const,
+    marginBottom: 14,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700" as const,
     color: Colors.light.text,
-    marginBottom: 14,
+  },
+  seeAllText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: Colors.light.tint,
   },
   ingredientList: {
     gap: 12,
