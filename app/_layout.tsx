@@ -40,6 +40,7 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerBackTitle: "Back" }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false, animation: "fade" }} />
+      <Stack.Screen name="recipe/[id]" options={{ headerBackTitle: "Back" }} />
       <Stack.Screen name="+not-found" options={{ title: "Not Found" }} />
     </Stack>
   );

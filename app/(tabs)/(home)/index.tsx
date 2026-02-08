@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { ChevronRight } from "lucide-react-native";
+import { ChevronRight, Play, Flame } from "lucide-react-native";
 import React, { useRef, useEffect } from "react";
 import {
   View,
@@ -14,11 +14,11 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 
 import Colors from "@/constants/colors";
-import { savedRecipes } from "@/mocks/ingredients";
 import { useAuth } from "@/providers/AuthProvider";
-import { fetchIngredients, APIIngredient } from "@/lib/api";
+import { fetchIngredients, fetchRecipes, APIIngredient, APIRecipe } from "@/lib/api";
 
 const INGREDIENT_CARD_WIDTH = 90;
 
@@ -32,6 +32,7 @@ function getGreeting(): string {
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const router = useRouter();
   const firstName = user?.user_metadata?.full_name?.split(" ")[0] ?? "Chef";
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -39,6 +40,11 @@ export default function HomeScreen() {
   const { data: ingredients = [], isLoading: ingredientsLoading } = useQuery<APIIngredient[]>({
     queryKey: ["ingredients"],
     queryFn: fetchIngredients,
+  });
+
+  const { data: recipes = [], isLoading: recipesLoading } = useQuery<APIRecipe[]>({
+    queryKey: ["recipes"],
+    queryFn: fetchRecipes,
   });
 
   useEffect(() => {
@@ -151,38 +157,65 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Saved from Internet</Text>
-            {savedRecipes.map((recipe) => (
-              <TouchableOpacity
-                key={recipe.id}
-                style={styles.recipeCard}
-                activeOpacity={0.8}
-                testID={`recipe-${recipe.id}`}
-              >
-                <Image
-                  source={{ uri: recipe.image }}
-                  style={styles.recipeImage}
-                  contentFit="cover"
-                />
-                <View style={styles.recipeInfo}>
-                  <Text style={styles.recipeTitle}>
-                    {recipe.title}{" "}
-                    <Text style={styles.recipeSubtitle}>
-                      ({recipe.subtitle})
+            <Text style={styles.sectionTitle}>Your Recipes</Text>
+            {recipesLoading ? (
+              <View style={styles.ingredientLoading}>
+                <ActivityIndicator size="small" color={Colors.light.tint} />
+              </View>
+            ) : recipes.length === 0 ? (
+              <Text style={styles.emptyIngredients}>No recipes yet</Text>
+            ) : (
+              recipes.map((recipe) => (
+                <TouchableOpacity
+                  key={recipe.id}
+                  style={styles.recipeCard}
+                  activeOpacity={0.8}
+                  testID={`recipe-${recipe.id}`}
+                  onPress={() => router.push({ pathname: "/recipe/[id]", params: { id: String(recipe.id) } })}
+                >
+                  {recipe.video?.thumbnail_url ? (
+                    <View style={styles.recipeImageWrap}>
+                      <Image
+                        source={{ uri: recipe.video.thumbnail_url }}
+                        style={styles.recipeImage}
+                        contentFit="cover"
+                      />
+                      <View style={styles.playBadge}>
+                        <Play size={12} color={Colors.light.white} fill={Colors.light.white} />
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={[styles.recipeImage, styles.recipeImagePlaceholder]}>
+                      <Text style={styles.recipeImagePlaceholderText}>
+                        {recipe.name.charAt(0)}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.recipeInfo}>
+                    <Text style={styles.recipeTitle} numberOfLines={2}>
+                      {recipe.name}
                     </Text>
-                  </Text>
-                  <Text style={styles.recipeSource}>
-                    {recipe.source} · {recipe.ingredientCount} ingredients
-                    required
-                  </Text>
-                  <TouchableOpacity style={styles.groceryButton}>
-                    <Text style={styles.groceryButtonText}>
-                      Generate grocery list
+                    <View style={styles.recipeMetaRow}>
+                      {recipe.cuisine_type ? (
+                        <View style={styles.cuisineBadge}>
+                          <Text style={styles.cuisineBadgeText}>{recipe.cuisine_type}</Text>
+                        </View>
+                      ) : null}
+                      {recipe.effort_level ? (
+                        <View style={styles.effortBadge}>
+                          <Flame size={10} color={Colors.light.accent} />
+                          <Text style={styles.effortText}>{recipe.effort_level}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                    <Text style={styles.recipeSource}>
+                      {recipe.ingredients.length} ingredients
+                      {recipe.video?.author_name ? ` · ${recipe.video.author_name}` : ""}
                     </Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            ))}
+                  </View>
+                </TouchableOpacity>
+              ))
+            )}
           </View>
 
           <LinearGradient
@@ -337,9 +370,35 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  recipeImageWrap: {
+    width: 100,
+    height: 100,
+    position: "relative" as const,
+  },
   recipeImage: {
     width: 100,
     height: 100,
+  },
+  recipeImagePlaceholder: {
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    backgroundColor: Colors.light.tint,
+  },
+  recipeImagePlaceholderText: {
+    fontSize: 28,
+    fontWeight: "700" as const,
+    color: Colors.light.white,
+  },
+  playBadge: {
+    position: "absolute" as const,
+    bottom: 6,
+    right: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
   },
   recipeInfo: {
     flex: 1,
@@ -351,28 +410,42 @@ const styles = StyleSheet.create({
     fontWeight: "700" as const,
     color: Colors.light.text,
   },
-  recipeSubtitle: {
-    fontWeight: "400" as const,
-    color: Colors.light.textSecondary,
-    fontSize: 13,
+  recipeMetaRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 6,
+    marginTop: 6,
+  },
+  cuisineBadge: {
+    backgroundColor: Colors.light.tintLight,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  cuisineBadgeText: {
+    fontSize: 11,
+    fontWeight: "600" as const,
+    color: Colors.light.tint,
+  },
+  effortBadge: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 3,
+    backgroundColor: Colors.light.accentLight,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  effortText: {
+    fontSize: 11,
+    fontWeight: "500" as const,
+    color: Colors.light.accent,
+    textTransform: "capitalize" as const,
   },
   recipeSource: {
     fontSize: 12,
     color: Colors.light.textSecondary,
-    marginTop: 3,
-  },
-  groceryButton: {
-    marginTop: 8,
-    backgroundColor: Colors.light.tint,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 14,
-    alignSelf: "flex-start",
-  },
-  groceryButtonText: {
-    fontSize: 12,
-    fontWeight: "600" as const,
-    color: Colors.light.white,
+    marginTop: 4,
   },
   shoppingBanner: {
     borderRadius: 18,

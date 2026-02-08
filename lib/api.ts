@@ -106,3 +106,38 @@ export async function createIngredient(
   console.log("[API] Created ingredient:", data);
   return data;
 }
+
+export interface RecipeIngredient {
+  name: string;
+  quantity: string;
+  unit: string;
+}
+
+export interface RecipeVideo {
+  video_id: string;
+  title: string;
+  author_name: string;
+  thumbnail_url: string;
+  link: string;
+}
+
+export interface APIRecipe {
+  id: number;
+  name: string;
+  description: string;
+  source: string;
+  ingredients: RecipeIngredient[];
+  technique_hints: string[];
+  cuisine_type: string;
+  effort_level: string;
+  vibe: string;
+  video: RecipeVideo | null;
+}
+
+export async function fetchRecipes(): Promise<APIRecipe[]> {
+  console.log("[API] Fetching recipes");
+  const response = await authFetch("/recipes");
+  const data = await response.json();
+  console.log("[API] Fetched", data.length, "recipes");
+  return data;
+}
