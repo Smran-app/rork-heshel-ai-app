@@ -1,6 +1,15 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { ChevronRight, Play, Flame, Plus, Youtube } from "lucide-react-native";
+import {
+  ChevronRight,
+  Play,
+  Flame,
+  Plus,
+  Youtube,
+  Lock,
+  ScanLine,
+  Camera,
+} from "lucide-react-native";
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import {
   View,
@@ -72,6 +81,13 @@ export default function HomeScreen() {
     ]).start();
   }, []);
 
+  const hasIngredients = ingredients.length > 0;
+  const hasRecipes = recipes.length > 0;
+
+  const navigateToKitchen = useCallback(() => {
+    router.push("/(tabs)/kitchen" as any);
+  }, [router]);
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView
@@ -95,103 +111,157 @@ export default function HomeScreen() {
             />
           </View>
 
-          <TouchableOpacity activeOpacity={0.85} testID="cook-suggestion-card" onPress={() => router.push("/cook-feed" as any)}>
-            <LinearGradient
-              colors={["#C5DBC0", "#D9ECCC", "#E8F5E0"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.suggestionCard}
-            >
-              <View style={styles.suggestionContent}>
-                <Text style={styles.suggestionTitle}>
-                  What should I cook?
-                </Text>
-                <Text style={styles.suggestionSubtitle}>
-                  Based on your kitchen & saved ideas
-                </Text>
-                <View style={styles.suggestionButton}>
-                  <ChevronRight size={20} color={Colors.light.white} />
+          {hasIngredients ? (
+            <TouchableOpacity activeOpacity={0.85} testID="cook-suggestion-card" onPress={() => router.push("/cook-feed" as any)}>
+              <LinearGradient
+                colors={["#C5DBC0", "#D9ECCC", "#E8F5E0"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.suggestionCard}
+              >
+                <View style={styles.suggestionContent}>
+                  <Text style={styles.suggestionTitle}>
+                    What should I cook?
+                  </Text>
+                  <Text style={styles.suggestionSubtitle}>
+                    Based on your kitchen & saved ideas
+                  </Text>
+                  <View style={styles.suggestionButton}>
+                    <ChevronRight size={20} color={Colors.light.white} />
+                  </View>
                 </View>
-              </View>
-              <Image
-                source={require("@/assets/images/mascot.png")}
-                style={styles.mascotLarge}
-                contentFit="contain"
-              />
-            </LinearGradient>
-          </TouchableOpacity>
+                <Image
+                  source={require("@/assets/images/mascot.png")}
+                  style={styles.mascotLarge}
+                  contentFit="contain"
+                />
+              </LinearGradient>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity activeOpacity={0.85} testID="cook-suggestion-card-locked" onPress={navigateToKitchen}>
+              <LinearGradient
+                colors={["#C5DBC0", "#D9ECCC", "#E8F5E0"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.suggestionCard}
+              >
+                <View style={styles.suggestionContent}>
+                  <Text style={styles.suggestionTitle}>
+                    What should I cook?
+                  </Text>
+                  <Text style={styles.suggestionSubtitle}>
+                    Add ingredients to unlock smart suggestions
+                  </Text>
+                  <View style={styles.dotRow}>
+                    <View style={[styles.dot, styles.dotGreen]} />
+                    <View style={[styles.dot, styles.dotLightGreen]} />
+                    <View style={[styles.dot, styles.dotLighter]} />
+                    <View style={[styles.dot, styles.dotLightest]} />
+                  </View>
+                  <View style={styles.addIngredientsBtn}>
+                    <Lock size={14} color={Colors.light.white} />
+                    <Text style={styles.addIngredientsBtnText}>Add ingredients</Text>
+                  </View>
+                </View>
+                <Image
+                  source={require("@/assets/images/mascot.png")}
+                  style={styles.mascotLarge}
+                  contentFit="contain"
+                />
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>What&apos;s in your kitchen?</Text>
-            {ingredientsLoading ? (
-              <View style={styles.ingredientLoading}>
-                <ActivityIndicator size="small" color={Colors.light.tint} />
-              </View>
-            ) : (
-              <FlatList
-                data={ingredients}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={(item) => String(item.id)}
-                contentContainerStyle={styles.ingredientList}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.ingredientCard}
-                    activeOpacity={0.7}
-                    testID={`ingredient-${item.id}`}
-                  >
-                    <View style={styles.ingredientImageWrap}>
-                      {item.global?.image ? (
-                        <Image
-                          source={{ uri: item.global.image }}
-                          style={styles.ingredientImage}
-                          contentFit="cover"
-                        />
-                      ) : (
-                        <View style={[styles.ingredientImage, styles.ingredientPlaceholder]}>
-                          <Text style={styles.ingredientPlaceholderText}>
-                            {(item.global?.name ?? item.name).charAt(0).toUpperCase()}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={styles.ingredientName}>{item.global?.name ?? item.name}</Text>
-                    <Text style={styles.ingredientQty}>{item.quantity} {item.unit}</Text>
-                  </TouchableOpacity>
-                )}
-                ListEmptyComponent={
-                  <Text style={styles.emptyIngredients}>No ingredients yet</Text>
-                }
-              />
-            )}
-          </View>
+          {hasIngredients ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>What&apos;s in your kitchen?</Text>
+              {ingredientsLoading ? (
+                <View style={styles.ingredientLoading}>
+                  <ActivityIndicator size="small" color={Colors.light.tint} />
+                </View>
+              ) : (
+                <FlatList
+                  data={ingredients}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  keyExtractor={(item) => String(item.id)}
+                  contentContainerStyle={styles.ingredientList}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.ingredientCard}
+                      activeOpacity={0.7}
+                      testID={`ingredient-${item.id}`}
+                    >
+                      <View style={styles.ingredientImageWrap}>
+                        {item.global?.image ? (
+                          <Image
+                            source={{ uri: item.global.image }}
+                            style={styles.ingredientImage}
+                            contentFit="cover"
+                          />
+                        ) : (
+                          <View style={[styles.ingredientImage, styles.ingredientPlaceholder]}>
+                            <Text style={styles.ingredientPlaceholderText}>
+                              {(item.global?.name ?? item.name).charAt(0).toUpperCase()}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.ingredientName}>{item.global?.name ?? item.name}</Text>
+                      <Text style={styles.ingredientQty}>{item.quantity} {item.unit}</Text>
+                    </TouchableOpacity>
+                  )}
+                />
+              )}
+            </View>
+          ) : (
+            <View style={styles.emptyKitchenSection}>
+              <Text style={styles.emptyKitchenTitle}>
+                Your kitchen is empty {"\u2014"} let&apos;s fix that
+              </Text>
+              <Text style={styles.emptyKitchenSubtitle}>
+                Add ingredients you already have and Heshel will suggest what you can cook right away.
+              </Text>
 
-          <TouchableOpacity
-            style={styles.addRecipeCard}
-            activeOpacity={0.85}
-            onPress={handleOpenModal}
-            testID="add-recipe-btn"
-          >
-            <LinearGradient
-              colors={["#FFF3D6", "#FFE8B8", "#FFDDA0"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.addRecipeGradient}
-            >
-              <View style={styles.addRecipeIconWrap}>
-                <Youtube size={22} color={Colors.light.white} />
+              <View style={styles.emptyKitchenActions}>
+                <TouchableOpacity
+                  style={styles.emptyActionBtn}
+                  activeOpacity={0.7}
+                  testID="scan-grocery-btn"
+                  onPress={navigateToKitchen}
+                >
+                  <View style={styles.emptyActionIcon}>
+                    <ScanLine size={18} color={Colors.light.tint} />
+                  </View>
+                  <Text style={styles.emptyActionText}>Scan a grocery bill</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.emptyActionBtn}
+                  activeOpacity={0.7}
+                  testID="upload-fridge-btn"
+                  onPress={navigateToKitchen}
+                >
+                  <View style={styles.emptyActionIcon}>
+                    <Camera size={18} color={Colors.light.accent} />
+                  </View>
+                  <Text style={styles.emptyActionText}>Upload fridge photo</Text>
+                </TouchableOpacity>
               </View>
-              <View style={styles.addRecipeContent}>
-                <Text style={styles.addRecipeTitle}>Add a Recipe</Text>
-                <Text style={styles.addRecipeSubtitle}>
-                  Paste YouTube links to save recipes
-                </Text>
-              </View>
-              <View style={styles.addRecipePlusWrap}>
-                <Plus size={20} color={Colors.light.accent} />
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
+
+              <Text style={styles.emptyKitchenHint}>Start with just 3-5 items</Text>
+
+              <TouchableOpacity
+                style={styles.manualAddBtn}
+                activeOpacity={0.7}
+                onPress={navigateToKitchen}
+                testID="manual-add-btn"
+              >
+                <Plus size={16} color={Colors.light.tint} />
+                <Text style={styles.manualAddText}>Or add manually</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -210,9 +280,7 @@ export default function HomeScreen() {
               <View style={styles.ingredientLoading}>
                 <ActivityIndicator size="small" color={Colors.light.tint} />
               </View>
-            ) : recipes.length === 0 ? (
-              <Text style={styles.emptyIngredients}>No recipes yet</Text>
-            ) : (
+            ) : hasRecipes ? (
               recipes.slice(0, 3).map((recipe) => (
                 <TouchableOpacity
                   key={recipe.id}
@@ -263,21 +331,84 @@ export default function HomeScreen() {
                   </View>
                 </TouchableOpacity>
               ))
+            ) : (
+              <TouchableOpacity
+                style={styles.emptyRecipeCard}
+                activeOpacity={0.85}
+                onPress={handleOpenModal}
+                testID="empty-recipe-add"
+              >
+                <LinearGradient
+                  colors={["#FFF8ED", "#FFF3D6"]}
+                  style={styles.emptyRecipeGradient}
+                >
+                  <View style={styles.emptyRecipeLeft}>
+                    <View style={styles.emptyRecipeIconRow}>
+                      <View style={[styles.emptyRecipeIconBadge, { backgroundColor: "#FF4444" }]}>
+                        <Youtube size={12} color={Colors.light.white} />
+                      </View>
+                    </View>
+                  </View>
+                  <View style={styles.emptyRecipeContent}>
+                    <Text style={styles.emptyRecipeTitle}>Save recipes you love</Text>
+                    <Text style={styles.emptyRecipeSubtitle}>
+                      Paste YouTube recipe links
+                    </Text>
+                    <Text style={styles.emptyRecipeUrl}>youtube.com/watch?v=abc123</Text>
+                  </View>
+                  <View style={styles.emptyRecipePlusWrap}>
+                    <Plus size={20} color={Colors.light.accent} />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
             )}
           </View>
+
+          {hasRecipes ? (
+            <TouchableOpacity
+              style={styles.addRecipeCard}
+              activeOpacity={0.85}
+              onPress={handleOpenModal}
+              testID="add-recipe-btn"
+            >
+              <LinearGradient
+                colors={["#FFF3D6", "#FFE8B8", "#FFDDA0"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.addRecipeGradient}
+              >
+                <View style={styles.addRecipeIconWrap}>
+                  <Youtube size={22} color={Colors.light.white} />
+                </View>
+                <View style={styles.addRecipeContent}>
+                  <Text style={styles.addRecipeTitle}>Add a Recipe</Text>
+                  <Text style={styles.addRecipeSubtitle}>
+                    Paste YouTube links to save recipes
+                  </Text>
+                </View>
+                <View style={styles.addRecipePlusWrap}>
+                  <Plus size={20} color={Colors.light.accent} />
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          ) : null}
 
           <LinearGradient
             colors={["#E8F0E4", "#D4E8CD"]}
             style={styles.shoppingBanner}
           >
-            <Text style={styles.shoppingText}>
-              You&apos;re 5 ingredients away from tonight&apos;s dinner.
+            <Text style={styles.shoppingTitle}>
+              We&apos;ll build your shopping list
+            </Text>
+            <Text style={styles.shoppingSubtitle}>
+              Once you add ingredients or recipes, Heshel creates a smart shopping list automatically.
             </Text>
             <TouchableOpacity
               style={styles.shoppingButton}
-              testID="view-shopping-list"
+              testID="get-started-btn"
+              onPress={navigateToKitchen}
             >
-              <Text style={styles.shoppingButtonText}>View shopping list</Text>
+              <Text style={styles.shoppingButtonText}>Get started</Text>
             </TouchableOpacity>
           </LinearGradient>
         </Animated.View>
@@ -348,7 +479,8 @@ const styles = StyleSheet.create({
   suggestionSubtitle: {
     fontSize: 13,
     color: Colors.light.textSecondary,
-    marginBottom: 14,
+    marginBottom: 10,
+    lineHeight: 18,
   },
   suggestionButton: {
     width: 40,
@@ -363,6 +495,44 @@ const styles = StyleSheet.create({
     height: 110,
     marginLeft: -10,
   },
+  dotRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 5,
+    marginBottom: 12,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  dotGreen: {
+    backgroundColor: "#4A7C59",
+  },
+  dotLightGreen: {
+    backgroundColor: "#8CB88A",
+  },
+  dotLighter: {
+    backgroundColor: "#B8D4B4",
+  },
+  dotLightest: {
+    backgroundColor: "#D4E8CD",
+  },
+  addIngredientsBtn: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: Colors.light.tint,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    alignSelf: "flex-start" as const,
+    gap: 8,
+  },
+  addIngredientsBtnText: {
+    fontSize: 14,
+    fontWeight: "700" as const,
+    color: Colors.light.white,
+  },
   section: {
     marginBottom: 24,
   },
@@ -376,6 +546,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700" as const,
     color: Colors.light.text,
+    marginBottom: 14,
   },
   seeAllText: {
     fontSize: 14,
@@ -414,15 +585,146 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600" as const,
     color: Colors.light.text,
-    textAlign: "center",
+    textAlign: "center" as const,
   },
   ingredientQty: {
     fontSize: 11,
     color: Colors.light.textSecondary,
     marginTop: 2,
   },
+  ingredientPlaceholder: {
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+    backgroundColor: Colors.light.tint,
+  },
+  ingredientPlaceholderText: {
+    fontSize: 20,
+    fontWeight: "700" as const,
+    color: Colors.light.white,
+  },
+  ingredientLoading: {
+    height: 100,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+  },
+  emptyKitchenSection: {
+    marginBottom: 28,
+  },
+  emptyKitchenTitle: {
+    fontSize: 19,
+    fontWeight: "700" as const,
+    color: Colors.light.text,
+    marginBottom: 6,
+  },
+  emptyKitchenSubtitle: {
+    fontSize: 14,
+    color: Colors.light.textSecondary,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  emptyKitchenActions: {
+    flexDirection: "row" as const,
+    gap: 10,
+    marginBottom: 14,
+  },
+  emptyActionBtn: {
+    flex: 1,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: Colors.light.white,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  emptyActionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: Colors.light.cardBg,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+  },
+  emptyActionText: {
+    fontSize: 13,
+    fontWeight: "600" as const,
+    color: Colors.light.text,
+    flex: 1,
+  },
+  emptyKitchenHint: {
+    fontSize: 13,
+    color: Colors.light.tabIconDefault,
+    textAlign: "center" as const,
+    marginBottom: 10,
+  },
+  manualAddBtn: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 6,
+    paddingVertical: 10,
+  },
+  manualAddText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: Colors.light.tint,
+  },
+  emptyRecipeCard: {
+    marginBottom: 4,
+  },
+  emptyRecipeGradient: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    borderRadius: 18,
+    padding: 16,
+    gap: 12,
+  },
+  emptyRecipeLeft: {
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+  },
+  emptyRecipeIconRow: {
+    flexDirection: "row" as const,
+    gap: 4,
+  },
+  emptyRecipeIconBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+  },
+  emptyRecipeContent: {
+    flex: 1,
+  },
+  emptyRecipeTitle: {
+    fontSize: 15,
+    fontWeight: "700" as const,
+    color: Colors.light.text,
+  },
+  emptyRecipeSubtitle: {
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+    marginTop: 2,
+  },
+  emptyRecipeUrl: {
+    fontSize: 11,
+    color: Colors.light.tabIconDefault,
+    marginTop: 4,
+    fontStyle: "italic" as const,
+  },
+  emptyRecipePlusWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(232,168,56,0.15)",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+  },
   recipeCard: {
-    flexDirection: "row",
+    flexDirection: "row" as const,
     backgroundColor: Colors.light.white,
     borderRadius: 16,
     overflow: "hidden",
@@ -466,7 +768,7 @@ const styles = StyleSheet.create({
   recipeInfo: {
     flex: 1,
     padding: 12,
-    justifyContent: "center",
+    justifyContent: "center" as const,
   },
   recipeTitle: {
     fontSize: 14,
@@ -510,49 +812,6 @@ const styles = StyleSheet.create({
     color: Colors.light.textSecondary,
     marginTop: 4,
   },
-  shoppingBanner: {
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 10,
-  },
-  shoppingText: {
-    fontSize: 15,
-    fontWeight: "600" as const,
-    color: Colors.light.text,
-    marginBottom: 12,
-  },
-  shoppingButton: {
-    backgroundColor: Colors.light.tint,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-    alignSelf: "flex-start",
-  },
-  shoppingButtonText: {
-    fontSize: 13,
-    fontWeight: "700" as const,
-    color: Colors.light.white,
-  },
-  ingredientLoading: {
-    height: 100,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  ingredientPlaceholder: {
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: Colors.light.tint,
-  },
-  ingredientPlaceholderText: {
-    fontSize: 20,
-    fontWeight: "700" as const,
-    color: Colors.light.white,
-  },
-  emptyIngredients: {
-    fontSize: 13,
-    color: Colors.light.textSecondary,
-    paddingVertical: 20,
-  },
   addRecipeCard: {
     marginBottom: 24,
   },
@@ -591,5 +850,34 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(232,168,56,0.15)",
     justifyContent: "center" as const,
     alignItems: "center" as const,
+  },
+  shoppingBanner: {
+    borderRadius: 18,
+    padding: 20,
+    marginBottom: 10,
+  },
+  shoppingTitle: {
+    fontSize: 17,
+    fontWeight: "700" as const,
+    color: Colors.light.text,
+    marginBottom: 6,
+  },
+  shoppingSubtitle: {
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+    lineHeight: 19,
+    marginBottom: 14,
+  },
+  shoppingButton: {
+    backgroundColor: Colors.light.tint,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    alignSelf: "flex-start" as const,
+  },
+  shoppingButtonText: {
+    fontSize: 13,
+    fontWeight: "700" as const,
+    color: Colors.light.white,
   },
 });

@@ -343,6 +343,91 @@ export async function searchRecipes(
   return recipes;
 }
 
+export interface ExtractedMatchedIngredient {
+  name: string;
+  global_ingredient: {
+    id: string;
+    name: string;
+    aliases: string;
+    category: string;
+    default_unit: string;
+    allowed_units: string;
+    image: string;
+    region: string;
+    is_common: string;
+    substitutes: string;
+  };
+}
+
+export interface ExtractIngredientsResponse {
+  from: string;
+  matched: ExtractedMatchedIngredient[];
+  unmatched: string[];
+  raw_response: string;
+}
+
+export async function extractIngredientsFromImage(
+  imageUri: string,
+  from: "list" | "fridge"
+): Promise<ExtractIngredientsResponse> {
+  console.log("[API] Extracting ingredients from image, source:", from);
+  const token = await getToken();
+  if (!token) {
+    throw new Error("No auth token found. Please log in again.");
+  }
+
+  const formData = new FormData();
+  const filename = imageUri.split("/").pop() ?? "photo.jpg";
+  const match = /\.([\w]+)$/.exec(filename);
+  const type = match ? `image/${match[1]}` : "image/jpeg";
+
+  formData.append("image", {
+    uri: imageUri,
+    name: filename,
+    type,
+  } as any);
+
+  const url = `${API_BASE}/captions/extract-ingredients?from=${from}`;
+  console.log("[API] Uploading image to:", url);
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    console.error("[API] Extract ingredients error:", response.status, text);
+    throw new Error(`Failed to extract ingredients: ${text}`);
+  }
+
+  const data = await response.json();
+  console.log("[API] Extracted", data.matched?.length, "matched,", data.unmatched?.length, "unmatched");
+  return data;
+}
+
+export interface BulkIngredientPayload {
+  name: string;
+  quantity: number;
+  unit: string;
+}
+
+export async function bulkCreateIngredients(
+  ingredients: BulkIngredientPayload[]
+): Promise<any> {
+  console.log("[API] Bulk creating", ingredients.length, "ingredients");
+  const response = await authFetch("/ingredients/bulk", {
+    method: "POST",
+    body: JSON.stringify({ ingredients }),
+  });
+  const data = await response.json();
+  console.log("[API] Bulk create result:", data);
+  return data;
+}
+
 export async function processVideoCaption(videoId: string): Promise<any> {
   console.log("[API] Processing captions for:", videoId);
   const response = await authFetch(`/captions?video_id=${videoId}&analyze=true`, {

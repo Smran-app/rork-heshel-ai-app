@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import { Image } from "expo-image";
-import { Plus, RefreshCw, X, ChevronDown } from "lucide-react-native";
+import { Plus, RefreshCw, X, ChevronDown, ShoppingCart, Refrigerator } from "lucide-react-native";
 import React, { useState, useCallback, useRef } from "react";
 import {
   View,
@@ -23,6 +23,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import Colors from "@/constants/colors";
 import { fetchIngredients, createIngredient, APIIngredient, CreateIngredientPayload } from "@/lib/api";
+import ImageScanModal from "@/components/ImageScanModal";
 
 const UNIT_OPTIONS = ["tsp", "tbsp", "cup", "g", "kg", "ml", "l", "oz", "lb", "piece", "pinch"];
 
@@ -33,6 +34,7 @@ export default function KitchenScreen() {
   const [ingredientQty, setIngredientQty] = useState<string>("");
   const [ingredientUnit, setIngredientUnit] = useState<string>("tsp");
   const [unitPickerOpen, setUnitPickerOpen] = useState<boolean>(false);
+  const [scanModalVisible, setScanModalVisible] = useState<boolean>(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(300)).current;
 
@@ -222,6 +224,38 @@ export default function KitchenScreen() {
             </View>
 
             <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <Text style={styles.scanLabel}>Scan from image</Text>
+              <View style={styles.scanOptionsRow}>
+                <TouchableOpacity
+                  style={styles.scanOptionBtn}
+                  activeOpacity={0.7}
+                  onPress={() => { closeModal(); setTimeout(() => setScanModalVisible(true), 300); }}
+                  testID="scan-fridge-option"
+                >
+                  <View style={[styles.scanOptionIcon, { backgroundColor: "#E3F2E1" }]}>
+                    <Refrigerator size={20} color="#4A7C59" />
+                  </View>
+                  <Text style={styles.scanOptionText}>Fridge</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.scanOptionBtn}
+                  activeOpacity={0.7}
+                  onPress={() => { closeModal(); setTimeout(() => setScanModalVisible(true), 300); }}
+                  testID="scan-list-option"
+                >
+                  <View style={[styles.scanOptionIcon, { backgroundColor: "#FFF3D6" }]}>
+                    <ShoppingCart size={20} color="#D4920B" />
+                  </View>
+                  <Text style={styles.scanOptionText}>Shopping List</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or add manually</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
               <Text style={styles.fieldLabel}>Name</Text>
               <TextInput
                 style={styles.modalInput}
@@ -305,6 +339,11 @@ export default function KitchenScreen() {
           </Animated.View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <ImageScanModal
+        visible={scanModalVisible}
+        onClose={() => setScanModalVisible(false)}
+      />
     </View>
   );
 }
@@ -568,5 +607,58 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700" as const,
     color: Colors.light.white,
+  },
+  scanLabel: {
+    fontSize: 13,
+    fontWeight: "600" as const,
+    color: Colors.light.textSecondary,
+    marginBottom: 10,
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.5,
+  },
+  scanOptionsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 16,
+  },
+  scanOptionBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: Colors.light.white,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  scanOptionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scanOptionText: {
+    fontSize: 13,
+    fontWeight: "600" as const,
+    color: Colors.light.text,
+  },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    gap: 12,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.light.border,
+  },
+  dividerText: {
+    fontSize: 12,
+    color: Colors.light.tabIconDefault,
+    fontWeight: "500" as const,
   },
 });
