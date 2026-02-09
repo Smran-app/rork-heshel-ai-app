@@ -1,15 +1,17 @@
 import { Stack, useRouter } from "expo-router";
 import { Image } from "expo-image";
-import { Play, Flame, Bookmark } from "lucide-react-native";
-import React from "react";
+import { Play, Flame, Bookmark, Youtube } from "lucide-react-native";
+import React, { useState } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 
 import Colors from "@/constants/colors";
 import { fetchRecipes, APIRecipe } from "@/lib/api";
+import AddRecipeModal from "@/components/AddRecipeModal";
 
 export default function SaveScreen() {
   const router = useRouter();
+  const [showAddModal, setShowAddModal] = useState<boolean>(false);
 
   const { data: recipes = [], isLoading } = useQuery<APIRecipe[]>({
     queryKey: ["recipes"],
@@ -68,6 +70,7 @@ export default function SaveScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: "Saved Recipes" }} />
+      <AddRecipeModal visible={showAddModal} onClose={() => setShowAddModal(false)} />
       {isLoading ? (
         <View style={styles.loadingWrap}>
           <ActivityIndicator size="large" color={Colors.light.tint} />
@@ -86,6 +89,15 @@ export default function SaveScreen() {
           }
         />
       )}
+      <TouchableOpacity
+        style={styles.fab}
+        activeOpacity={0.85}
+        onPress={() => setShowAddModal(true)}
+        testID="add-recipe-fab"
+      >
+        <Youtube size={22} color={Colors.light.white} />
+        <Text style={styles.fabText}>Add via YouTube</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -218,5 +230,28 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 15,
     color: Colors.light.textSecondary,
+  },
+  fab: {
+    position: "absolute",
+    bottom: 24,
+    right: 20,
+    left: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    backgroundColor: Colors.light.tint,
+    paddingVertical: 16,
+    borderRadius: 16,
+    shadowColor: Colors.light.tint,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  fabText: {
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: Colors.light.white,
   },
 });
