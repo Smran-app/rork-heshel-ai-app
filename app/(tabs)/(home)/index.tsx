@@ -300,6 +300,12 @@ export default function HomeScreen() {
                         <Play size={12} color={Colors.light.white} fill={Colors.light.white} />
                       </View>
                     </View>
+                  ) : recipe.image ? (
+                    <Image
+                      source={{ uri: recipe.image }}
+                      style={styles.recipeImage}
+                      contentFit="cover"
+                    />
                   ) : (
                     <View style={[styles.recipeImage, styles.recipeImagePlaceholder]}>
                       <Text style={styles.recipeImagePlaceholderText}>

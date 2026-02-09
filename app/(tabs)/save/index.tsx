@@ -66,6 +66,8 @@ export default function SaveScreen() {
             <Play size={16} color={Colors.light.white} fill={Colors.light.white} />
           </View>
         </View>
+      ) : item.image ? (
+        <Image source={{ uri: item.image }} style={styles.image} contentFit="cover" />
       ) : (
         <View style={[styles.image, styles.imagePlaceholder]}>
           <Text style={styles.imagePlaceholderText}>{(item.name ?? "R").charAt(0)}</Text>

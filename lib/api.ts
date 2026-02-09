@@ -132,6 +132,7 @@ export interface APIRecipe {
   effort_level: string;
   vibe: string;
   video: RecipeVideo | null;
+  image?: string | null;
 }
 
 export async function fetchRecipes(): Promise<APIRecipe[]> {
