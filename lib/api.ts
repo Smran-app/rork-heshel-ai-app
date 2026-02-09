@@ -428,6 +428,47 @@ export async function bulkCreateIngredients(
   return data;
 }
 
+export async function imagesToRecipe(imageUris: string[]): Promise<any> {
+  console.log("[API] Converting", imageUris.length, "images to recipe");
+  const token = await getToken();
+  if (!token) {
+    throw new Error("No auth token found. Please log in again.");
+  }
+
+  const formData = new FormData();
+  imageUris.forEach((uri, index) => {
+    const filename = uri.split("/").pop() ?? `photo_${index}.jpg`;
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : "image/jpeg";
+    formData.append("images", {
+      uri,
+      name: filename,
+      type,
+    } as any);
+  });
+
+  const url = `${API_BASE}/captions/images-to-recipe`;
+  console.log("[API] Uploading images to:", url);
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    console.error("[API] Images to recipe error:", response.status, text);
+    throw new Error(`Failed to create recipe from images: ${text}`);
+  }
+
+  const data = await response.json();
+  console.log("[API] Images to recipe result:", data);
+  return data;
+}
+
 export async function processVideoCaption(videoId: string): Promise<any> {
   console.log("[API] Processing captions for:", videoId);
   const response = await authFetch(`/captions?video_id=${videoId}&analyze=true`, {

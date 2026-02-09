@@ -1,22 +1,56 @@
 import { Stack, useRouter } from "expo-router";
 import { Image } from "expo-image";
-import { Play, Flame, Bookmark, Youtube } from "lucide-react-native";
-import React, { useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
+import { Play, Flame, Bookmark, Youtube, Camera } from "lucide-react-native";
+import React, { useState, useCallback } from "react";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, Platform } from "react-native";
 import { useQuery } from "@tanstack/react-query";
+import * as ImagePicker from "expo-image-picker";
 
 import Colors from "@/constants/colors";
 import { fetchRecipes, APIRecipe } from "@/lib/api";
 import AddRecipeModal from "@/components/AddRecipeModal";
+import { useRecipeQueue } from "@/providers/RecipeQueueProvider";
 
 export default function SaveScreen() {
   const router = useRouter();
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  const { addImagesToQueue } = useRecipeQueue();
 
   const { data: recipes = [], isLoading } = useQuery<APIRecipe[]>({
     queryKey: ["recipes"],
     queryFn: fetchRecipes,
   });
+
+  const handlePickImages = useCallback(async () => {
+    try {
+      if (Platform.OS !== "web") {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+          Alert.alert("Permission needed", "Please allow access to your photo library to upload recipe images.");
+          return;
+        }
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: true,
+        quality: 0.8,
+        selectionLimit: 10,
+      });
+
+      if (result.canceled || result.assets.length === 0) {
+        console.log("[Save] Image picker cancelled");
+        return;
+      }
+
+      const uris = result.assets.map((asset) => asset.uri);
+      console.log("[Save] Picked", uris.length, "images for recipe");
+      addImagesToQueue(uris);
+    } catch (err) {
+      console.error("[Save] Image picker error:", err);
+      Alert.alert("Error", "Failed to pick images. Please try again.");
+    }
+  }, [addImagesToQueue]);
 
   const renderRecipe = ({ item }: { item: APIRecipe }) => (
     <TouchableOpacity
@@ -89,15 +123,26 @@ export default function SaveScreen() {
           }
         />
       )}
-      <TouchableOpacity
-        style={styles.fab}
-        activeOpacity={0.85}
-        onPress={() => setShowAddModal(true)}
-        testID="add-recipe-fab"
-      >
-        <Youtube size={22} color={Colors.light.white} />
-        <Text style={styles.fabText}>Add via YouTube</Text>
-      </TouchableOpacity>
+      <View style={styles.fabRow}>
+        <TouchableOpacity
+          style={styles.fabSecondary}
+          activeOpacity={0.85}
+          onPress={handlePickImages}
+          testID="add-recipe-images-fab"
+        >
+          <Camera size={20} color={Colors.light.tint} />
+          <Text style={styles.fabSecondaryText}>From Images</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.fabPrimary}
+          activeOpacity={0.85}
+          onPress={() => setShowAddModal(true)}
+          testID="add-recipe-fab"
+        >
+          <Youtube size={20} color={Colors.light.white} />
+          <Text style={styles.fabPrimaryText}>YouTube</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -115,6 +160,7 @@ const styles = StyleSheet.create({
   list: {
     padding: 20,
     gap: 16,
+    paddingBottom: 100,
   },
   card: {
     backgroundColor: Colors.light.white,
@@ -231,15 +277,42 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.light.textSecondary,
   },
-  fab: {
+  fabRow: {
     position: "absolute",
     bottom: 24,
     right: 20,
     left: 20,
     flexDirection: "row",
+    gap: 10,
+  },
+  fabSecondary: {
+    flex: 1,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
+    gap: 8,
+    backgroundColor: Colors.light.white,
+    paddingVertical: 16,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: Colors.light.tint,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  fabSecondaryText: {
+    fontSize: 14,
+    fontWeight: "700" as const,
+    color: Colors.light.tint,
+  },
+  fabPrimary: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
     backgroundColor: Colors.light.tint,
     paddingVertical: 16,
     borderRadius: 16,
@@ -249,8 +322,8 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 6,
   },
-  fabText: {
-    fontSize: 16,
+  fabPrimaryText: {
+    fontSize: 14,
     fontWeight: "700" as const,
     color: Colors.light.white,
   },

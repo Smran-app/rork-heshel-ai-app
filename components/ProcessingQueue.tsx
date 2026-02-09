@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Image } from "expo-image";
-import { X, CheckCircle, AlertCircle, Loader } from "lucide-react-native";
+import { X, CheckCircle, AlertCircle, Loader, ImageIcon } from "lucide-react-native";
 
 import Colors from "@/constants/colors";
 import { useRecipeQueue, QueueItem } from "@/providers/RecipeQueueProvider";
@@ -34,13 +34,29 @@ function QueueItemRow({ item }: { item: QueueItem }) {
     outputRange: ["0deg", "360deg"],
   });
 
+  const isImageType = item.type === "images";
+
   return (
     <View style={styles.itemRow}>
-      <Image
-        source={{ uri: item.thumbnail }}
-        style={styles.itemThumb}
-        contentFit="cover"
-      />
+      {isImageType ? (
+        <View style={styles.imageThumbWrap}>
+          <Image
+            source={{ uri: item.thumbnail }}
+            style={styles.itemThumb}
+            contentFit="cover"
+          />
+          <View style={styles.imageCountBadge}>
+            <ImageIcon size={8} color={Colors.light.white} />
+            <Text style={styles.imageCountText}>{item.imageUris?.length ?? 1}</Text>
+          </View>
+        </View>
+      ) : (
+        <Image
+          source={{ uri: item.thumbnail }}
+          style={styles.itemThumb}
+          contentFit="cover"
+        />
+      )}
       <View style={styles.itemInfo}>
         <Text style={styles.itemTitle} numberOfLines={1}>
           {item.title}
@@ -130,7 +146,7 @@ export default function ProcessingQueue() {
           )}
         </View>
         {queue.map((item) => (
-          <QueueItemRow key={item.videoId} item={item} />
+          <QueueItemRow key={item.id} item={item} />
         ))}
       </View>
     </Animated.View>
@@ -178,6 +194,26 @@ const styles = StyleSheet.create({
     width: 40,
     height: 30,
     borderRadius: 6,
+  },
+  imageThumbWrap: {
+    position: "relative",
+  },
+  imageCountBadge: {
+    position: "absolute",
+    bottom: -2,
+    right: -4,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    backgroundColor: Colors.light.tint,
+    borderRadius: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+  },
+  imageCountText: {
+    fontSize: 8,
+    fontWeight: "700" as const,
+    color: Colors.light.white,
   },
   itemInfo: {
     flex: 1,
