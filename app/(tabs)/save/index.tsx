@@ -68,7 +68,7 @@ export default function SaveScreen() {
         </View>
       ) : (
         <View style={[styles.image, styles.imagePlaceholder]}>
-          <Text style={styles.imagePlaceholderText}>{item.name.charAt(0)}</Text>
+          <Text style={styles.imagePlaceholderText}>{(item.name ?? "R").charAt(0)}</Text>
         </View>
       )}
       <View style={styles.overlay}>
@@ -80,7 +80,7 @@ export default function SaveScreen() {
       </View>
       <View style={styles.info}>
         <View style={styles.titleRow}>
-          <Text style={styles.title} numberOfLines={2}>{item.name}</Text>
+          <Text style={styles.title} numberOfLines={2}>{item.name ?? "Untitled Recipe"}</Text>
           <Bookmark size={18} color={Colors.light.tint} fill={Colors.light.tint} />
         </View>
         <View style={styles.metaRow}>
