@@ -34,7 +34,20 @@ export default function RecipeDetailScreen() {
     queryFn: fetchRecipes,
   });
 
-  const recipe = recipes.find((r) => String(r.id) === id);
+  const rawRecipe = recipes.find((r) => String(r.id) === id);
+
+  const recipe = rawRecipe
+    ? {
+        ...rawRecipe,
+        name: rawRecipe.name ?? "Untitled Recipe",
+        description: rawRecipe.description ?? "",
+        ingredients: rawRecipe.ingredients ?? [],
+        technique_hints: rawRecipe.technique_hints ?? [],
+        cuisine_type: rawRecipe.cuisine_type ?? "",
+        effort_level: rawRecipe.effort_level ?? "",
+        vibe: rawRecipe.vibe ?? "",
+      }
+    : null;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -79,7 +92,7 @@ export default function RecipeDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: recipe.name.length > 28 ? recipe.name.slice(0, 28) + "..." : recipe.name }} />
+      <Stack.Screen options={{ title: (recipe.name?.length ?? 0) > 28 ? recipe.name.slice(0, 28) + "..." : recipe.name }} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <Animated.View style={{ opacity: fadeAnim }}>
           {recipe.video?.thumbnail_url ? (
