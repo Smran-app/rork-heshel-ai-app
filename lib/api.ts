@@ -471,28 +471,16 @@ export async function imagesToRecipe(imageUris: string[]): Promise<any> {
 }
 
 export async function fetchRecipeIngredientsRequired(
-  recipeId: number,
-  vibe: string = "comfort",
-  effort: string = "low"
+  recipeId: number
 ): Promise<string[]> {
   console.log("[API] Fetching ingredients_required for recipe:", recipeId);
-  const response = await authFetch(
-    `/search/feed?vibe=${encodeURIComponent(vibe)}&effort=${encodeURIComponent(effort)}&top_k=10`,
-    { method: "POST" }
-  );
+  const response = await authFetch(`/recipes/${recipeId}`);
   const data = await response.json();
-  const results = data?.results ?? data;
-  if (!Array.isArray(results)) return [];
+  console.log("[API] Recipe detail response keys:", Object.keys(data ?? {}));
 
-  const match = results.find((item: any) => item?.recipe?.id === recipeId);
-  if (match?.ingredients_required && Array.isArray(match.ingredients_required)) {
-    console.log("[API] Found ingredients_required:", match.ingredients_required.length);
-    return match.ingredients_required;
-  }
-
-  if (results.length > 0 && results[0]?.ingredients_required) {
-    console.log("[API] Using first result ingredients_required");
-    return results[0].ingredients_required;
+  if (data?.ingredients_required && Array.isArray(data.ingredients_required)) {
+    console.log("[API] Found ingredients_required:", data.ingredients_required.length);
+    return data.ingredients_required;
   }
 
   return [];
