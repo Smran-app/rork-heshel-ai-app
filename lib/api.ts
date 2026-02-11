@@ -470,6 +470,34 @@ export async function imagesToRecipe(imageUris: string[]): Promise<any> {
   return data;
 }
 
+export async function fetchRecipeIngredientsRequired(
+  recipeId: number,
+  vibe: string = "comfort",
+  effort: string = "low"
+): Promise<string[]> {
+  console.log("[API] Fetching ingredients_required for recipe:", recipeId);
+  const response = await authFetch(
+    `/search/feed?vibe=${encodeURIComponent(vibe)}&effort=${encodeURIComponent(effort)}&top_k=10`,
+    { method: "POST" }
+  );
+  const data = await response.json();
+  const results = data?.results ?? data;
+  if (!Array.isArray(results)) return [];
+
+  const match = results.find((item: any) => item?.recipe?.id === recipeId);
+  if (match?.ingredients_required && Array.isArray(match.ingredients_required)) {
+    console.log("[API] Found ingredients_required:", match.ingredients_required.length);
+    return match.ingredients_required;
+  }
+
+  if (results.length > 0 && results[0]?.ingredients_required) {
+    console.log("[API] Using first result ingredients_required");
+    return results[0].ingredients_required;
+  }
+
+  return [];
+}
+
 export async function processVideoCaption(videoId: string): Promise<any> {
   console.log("[API] Processing captions for:", videoId);
   const response = await authFetch(`/captions?video_id=${videoId}&analyze=true`, {

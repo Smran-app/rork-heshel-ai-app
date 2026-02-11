@@ -1,5 +1,5 @@
-import { Stack } from "expo-router";
-import { ChevronRight, Settings, Bell, Heart, CircleHelp, LogOut, ChefHat, Leaf, Flame, Calendar, RefreshCw } from "lucide-react-native";
+import { Stack, useRouter } from "expo-router";
+import { ChevronRight, Heart, CircleHelp, LogOut, ChefHat, Leaf, Flame, Calendar } from "lucide-react-native";
 import React, { useCallback } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, RefreshControl } from "react-native";
 import { useQuery } from "@tanstack/react-query";
@@ -9,14 +9,13 @@ import { useAuth } from "@/providers/AuthProvider";
 import { fetchUserProfile } from "@/lib/api";
 
 const menuItems = [
-  { icon: Settings, label: "Preferences", id: "prefs" },
-  { icon: Bell, label: "Notifications", id: "notif" },
-  { icon: Heart, label: "Dietary Restrictions", id: "diet" },
-  { icon: CircleHelp, label: "Help & Support", id: "help" },
+  { icon: Heart, label: "Dietary Restrictions", id: "diet", route: "/dietary-restrictions" },
+  { icon: CircleHelp, label: "Help & Support", id: "help", route: null },
 ];
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
+  const router = useRouter();
 
   const profileQuery = useQuery({
     queryKey: ["userProfile"],
@@ -125,6 +124,7 @@ export default function ProfileScreen() {
               style={styles.menuItem}
               activeOpacity={0.7}
               testID={`menu-${item.id}`}
+              onPress={() => item.route ? router.push(item.route as any) : null}
             >
               <item.icon size={20} color={Colors.light.tint} />
               <Text style={styles.menuLabel}>{item.label}</Text>

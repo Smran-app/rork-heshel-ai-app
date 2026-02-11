@@ -104,11 +104,6 @@ export default function HomeScreen() {
                 What would you like to cook today?
               </Text>
             </View>
-            <Image
-              source={require("@/assets/images/mascot.png")}
-              style={styles.mascotSmall}
-              contentFit="contain"
-            />
           </View>
 
           {hasIngredients ? (
@@ -458,11 +453,7 @@ const styles = StyleSheet.create({
     color: Colors.light.textSecondary,
     marginTop: 4,
   },
-  mascotSmall: {
-    width: 60,
-    height: 60,
-    marginLeft: 8,
-  },
+
   suggestionCard: {
     borderRadius: 20,
     padding: 20,
@@ -497,8 +488,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   mascotLarge: {
-    width: 110,
-    height: 110,
+    width: 140,
+    height: 140,
     marginLeft: -10,
   },
   dotRow: {

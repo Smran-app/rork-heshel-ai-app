@@ -7,8 +7,11 @@ import {
   Play,
   Sparkles,
   UtensilsCrossed,
+  ShoppingCart,
+  Check,
+  Circle,
 } from "lucide-react-native";
-import React, { useRef, useEffect, useCallback } from "react";
+import React, { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -22,12 +25,44 @@ import {
 import { useQuery } from "@tanstack/react-query";
 
 import Colors from "@/constants/colors";
-import { fetchRecipes, APIRecipe } from "@/lib/api";
+import { fetchRecipes, APIRecipe, fetchRecipeIngredientsRequired } from "@/lib/api";
+
+interface ParsedShoppingItem {
+  name: string;
+  quantity: string;
+  unit: string;
+}
+
+function parseIngredientString(raw: string): ParsedShoppingItem {
+  try {
+    const cleaned = raw
+      .replace(/'/g, '"')
+      .replace(/None/g, '"not specified"')
+      .replace(/True/g, '"true"')
+      .replace(/False/g, '"false"');
+    const parsed = JSON.parse(cleaned);
+    return {
+      name: parsed.name ?? "Unknown",
+      quantity: parsed.quantity ?? "not specified",
+      unit: parsed.unit ?? "not specified",
+    };
+  } catch {
+    const nameMatch = raw.match(/'name':\s*'([^']+)'/);
+    const qtyMatch = raw.match(/'quantity':\s*'([^']+)'/);
+    const unitMatch = raw.match(/'unit':\s*'([^']+)'/);
+    return {
+      name: nameMatch?.[1] ?? raw.slice(0, 30),
+      quantity: qtyMatch?.[1] ?? "not specified",
+      unit: unitMatch?.[1] ?? "not specified",
+    };
+  }
+}
 
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
 
   const { data: recipes = [], isLoading } = useQuery<APIRecipe[]>({
     queryKey: ["recipes"],
@@ -49,6 +84,18 @@ export default function RecipeDetailScreen() {
       }
     : null;
 
+  const recipeId = rawRecipe?.id ?? 0;
+
+  const { data: ingredientsRequired = [], isLoading: shoppingLoading } = useQuery<string[]>({
+    queryKey: ["ingredientsRequired", recipeId],
+    queryFn: () => fetchRecipeIngredientsRequired(recipeId),
+    enabled: recipeId > 0,
+  });
+
+  const shoppingItems = useMemo(() => {
+    return ingredientsRequired.map(parseIngredientString);
+  }, [ingredientsRequired]);
+
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -63,6 +110,21 @@ export default function RecipeDetailScreen() {
       Linking.openURL(recipe.video.link);
     }
   }, [recipe?.video?.link]);
+
+  const toggleChecked = useCallback((idx: number) => {
+    setCheckedItems((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) {
+        next.delete(idx);
+      } else {
+        next.add(idx);
+      }
+      return next;
+    });
+  }, []);
+
+  const checkedCount = checkedItems.size;
+  const totalItems = shoppingItems.length;
 
   if (isLoading) {
     return (
@@ -166,6 +228,82 @@ export default function RecipeDetailScreen() {
                 ) : null}
               </View>
             ))}
+          </View>
+
+          <View style={styles.shoppingSection}>
+            <View style={styles.shoppingHeader}>
+              <View style={styles.shoppingTitleRow}>
+                <View style={styles.shoppingIconWrap}>
+                  <ShoppingCart size={18} color={Colors.light.white} />
+                </View>
+                <View style={styles.shoppingTitleGroup}>
+                  <Text style={styles.shoppingTitle}>Shopping List</Text>
+                  {totalItems > 0 && (
+                    <Text style={styles.shoppingCount}>
+                      {checkedCount}/{totalItems} items
+                    </Text>
+                  )}
+                </View>
+              </View>
+              {totalItems > 0 && (
+                <View style={styles.progressBarBg}>
+                  <View
+                    style={[
+                      styles.progressBarFill,
+                      { width: `${totalItems > 0 ? (checkedCount / totalItems) * 100 : 0}%` as any },
+                    ]}
+                  />
+                </View>
+              )}
+            </View>
+
+            {shoppingLoading ? (
+              <View style={styles.shoppingLoading}>
+                <ActivityIndicator size="small" color={Colors.light.tint} />
+                <Text style={styles.shoppingLoadingText}>Fetching shopping list...</Text>
+              </View>
+            ) : shoppingItems.length > 0 ? (
+              <View style={styles.shoppingList}>
+                {shoppingItems.map((item, idx) => {
+                  const isChecked = checkedItems.has(idx);
+                  return (
+                    <TouchableOpacity
+                      key={`shop-${idx}`}
+                      style={[styles.shopItem, isChecked && styles.shopItemChecked]}
+                      activeOpacity={0.7}
+                      onPress={() => toggleChecked(idx)}
+                      testID={`shop-item-${idx}`}
+                    >
+                      <View style={[styles.checkCircle, isChecked && styles.checkCircleActive]}>
+                        {isChecked ? (
+                          <Check size={12} color={Colors.light.white} />
+                        ) : (
+                          <Circle size={12} color={Colors.light.tabIconDefault} />
+                        )}
+                      </View>
+                      <View style={styles.shopItemInfo}>
+                        <Text
+                          style={[styles.shopItemName, isChecked && styles.shopItemNameChecked]}
+                          numberOfLines={1}
+                        >
+                          {item.name}
+                        </Text>
+                        {item.quantity !== "not specified" || item.unit !== "not specified" ? (
+                          <Text style={[styles.shopItemQty, isChecked && styles.shopItemQtyChecked]}>
+                            {item.quantity !== "not specified" ? item.quantity : ""}
+                            {item.unit !== "not specified" ? ` ${item.unit}` : ""}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ) : (
+              <View style={styles.shoppingEmpty}>
+                <Text style={styles.shoppingEmptyText}>No shopping list available for this recipe.</Text>
+              </View>
+            )}
           </View>
 
           {recipe.technique_hints.length > 0 ? (
@@ -419,5 +557,138 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     color: Colors.light.textSecondary,
+  },
+  shoppingSection: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    backgroundColor: Colors.light.white,
+    borderRadius: 18,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  shoppingHeader: {
+    backgroundColor: Colors.light.tint,
+    paddingHorizontal: 18,
+    paddingTop: 16,
+    paddingBottom: 14,
+  },
+  shoppingTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 8,
+  },
+  shoppingIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  shoppingTitleGroup: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  shoppingTitle: {
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: Colors.light.white,
+  },
+  shoppingCount: {
+    fontSize: 13,
+    fontWeight: "600" as const,
+    color: "rgba(255,255,255,0.8)",
+  },
+  progressBarBg: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.25)",
+  },
+  progressBarFill: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.light.white,
+  },
+  shoppingLoading: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 28,
+  },
+  shoppingLoadingText: {
+    fontSize: 13,
+    color: Colors.light.textSecondary,
+  },
+  shoppingList: {
+    paddingHorizontal: 6,
+    paddingVertical: 8,
+  },
+  shopItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    marginHorizontal: 4,
+    marginVertical: 2,
+    borderRadius: 12,
+    gap: 12,
+  },
+  shopItemChecked: {
+    backgroundColor: Colors.light.tintLight,
+  },
+  checkCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.light.border,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkCircleActive: {
+    backgroundColor: Colors.light.tint,
+    borderColor: Colors.light.tint,
+  },
+  shopItemInfo: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  shopItemName: {
+    fontSize: 14,
+    fontWeight: "500" as const,
+    color: Colors.light.text,
+    flex: 1,
+  },
+  shopItemNameChecked: {
+    textDecorationLine: "line-through",
+    color: Colors.light.tabIconDefault,
+  },
+  shopItemQty: {
+    fontSize: 12,
+    color: Colors.light.textSecondary,
+    fontWeight: "500" as const,
+    marginLeft: 8,
+  },
+  shopItemQtyChecked: {
+    color: Colors.light.tabIconDefault,
+    textDecorationLine: "line-through",
+  },
+  shoppingEmpty: {
+    paddingVertical: 24,
+    alignItems: "center",
+  },
+  shoppingEmptyText: {
+    fontSize: 13,
+    color: Colors.light.tabIconDefault,
   },
 });
