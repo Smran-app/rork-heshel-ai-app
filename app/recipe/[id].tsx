@@ -10,6 +10,8 @@ import {
   ShoppingCart,
   Check,
   Circle,
+  Save,
+  CheckCircle,
 } from "lucide-react-native";
 import React, { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import {
@@ -22,10 +24,10 @@ import {
   Animated,
   Linking,
 } from "react-native";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import Colors from "@/constants/colors";
-import { fetchRecipes, APIRecipe, fetchRecipeIngredientsRequired } from "@/lib/api";
+import { fetchRecipes, APIRecipe, fetchRecipeIngredientsRequired, bulkCreateIngredients, BulkIngredientPayload } from "@/lib/api";
 
 interface ParsedShoppingItem {
   name: string;
@@ -63,6 +65,8 @@ export default function RecipeDetailScreen() {
   const router = useRouter();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
+  const [savedSuccess, setSavedSuccess] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: recipes = [], isLoading } = useQuery<APIRecipe[]>({
     queryKey: ["recipes"],
@@ -125,6 +129,30 @@ export default function RecipeDetailScreen() {
 
   const checkedCount = checkedItems.size;
   const totalItems = shoppingItems.length;
+
+  const saveIngredientsMutation = useMutation({
+    mutationFn: async () => {
+      const payload: BulkIngredientPayload[] = shoppingItems.map((item) => {
+        const qtyNum = parseFloat(item.quantity);
+        return {
+          name: item.name,
+          quantity: isNaN(qtyNum) ? 1 : qtyNum,
+          unit: item.unit !== "not specified" ? item.unit : "pcs",
+        };
+      });
+      console.log("[Recipe] Saving shopping list to kitchen:", payload.length, "items");
+      return bulkCreateIngredients(payload);
+    },
+    onSuccess: () => {
+      console.log("[Recipe] Shopping list saved successfully");
+      setSavedSuccess(true);
+      queryClient.invalidateQueries({ queryKey: ["ingredients"] });
+      setTimeout(() => setSavedSuccess(false), 3000);
+    },
+    onError: (error) => {
+      console.error("[Recipe] Failed to save shopping list:", error);
+    },
+  });
 
   if (isLoading) {
     return (
@@ -302,6 +330,42 @@ export default function RecipeDetailScreen() {
             ) : (
               <View style={styles.shoppingEmpty}>
                 <Text style={styles.shoppingEmptyText}>No shopping list available for this recipe.</Text>
+              </View>
+            )}
+
+            {shoppingItems.length > 0 && (
+              <View style={styles.saveButtonWrap}>
+                <TouchableOpacity
+                  style={[
+                    styles.saveToKitchenBtn,
+                    savedSuccess && styles.saveToKitchenBtnSuccess,
+                    saveIngredientsMutation.isPending && styles.saveToKitchenBtnDisabled,
+                  ]}
+                  activeOpacity={0.8}
+                  onPress={() => saveIngredientsMutation.mutate()}
+                  disabled={saveIngredientsMutation.isPending || savedSuccess}
+                  testID="save-shopping-list-btn"
+                >
+                  {saveIngredientsMutation.isPending ? (
+                    <ActivityIndicator size="small" color={Colors.light.white} />
+                  ) : savedSuccess ? (
+                    <CheckCircle size={18} color={Colors.light.white} />
+                  ) : (
+                    <Save size={18} color={Colors.light.white} />
+                  )}
+                  <Text style={styles.saveToKitchenText}>
+                    {saveIngredientsMutation.isPending
+                      ? "Saving..."
+                      : savedSuccess
+                        ? "Saved to Kitchen!"
+                        : "Save to Kitchen"}
+                  </Text>
+                </TouchableOpacity>
+                {saveIngredientsMutation.isError && (
+                  <Text style={styles.saveErrorText}>
+                    Failed to save. Tap to retry.
+                  </Text>
+                )}
               </View>
             )}
           </View>
@@ -690,5 +754,36 @@ const styles = StyleSheet.create({
   shoppingEmptyText: {
     fontSize: 13,
     color: Colors.light.tabIconDefault,
+  },
+  saveButtonWrap: {
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+    paddingTop: 4,
+  },
+  saveToKitchenBtn: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 8,
+    backgroundColor: Colors.light.tint,
+    paddingVertical: 14,
+    borderRadius: 14,
+  },
+  saveToKitchenBtnSuccess: {
+    backgroundColor: "#22C55E",
+  },
+  saveToKitchenBtnDisabled: {
+    opacity: 0.7,
+  },
+  saveToKitchenText: {
+    fontSize: 15,
+    fontWeight: "700" as const,
+    color: Colors.light.white,
+  },
+  saveErrorText: {
+    fontSize: 12,
+    color: "#EF4444",
+    textAlign: "center" as const,
+    marginTop: 6,
   },
 });
