@@ -160,9 +160,12 @@ export default function RecipeDetailScreen() {
   const checkedCount = checkedItems.size;
   const totalItems = shoppingItems.length;
 
+  const hasSelectedItems = checkedItems.size > 0;
+
   const saveIngredientsMutation = useMutation({
     mutationFn: async () => {
-      const payload: BulkIngredientPayload[] = shoppingItems.map((item) => {
+      const selectedItems = shoppingItems.filter((_, idx) => checkedItems.has(idx));
+      const payload: BulkIngredientPayload[] = selectedItems.map((item) => {
         const qtyNum = parseFloat(item.quantity);
         return {
           name: item.name,
@@ -170,7 +173,7 @@ export default function RecipeDetailScreen() {
           unit: item.unit !== "not specified" ? item.unit : "pcs",
         };
       });
-      console.log("[Recipe] Saving shopping list to kitchen:", payload.length, "items");
+      console.log("[Recipe] Saving", payload.length, "selected items to kitchen");
       return bulkCreateIngredients(payload);
     },
     onSuccess: () => {
@@ -369,11 +372,11 @@ export default function RecipeDetailScreen() {
                   style={[
                     styles.saveToKitchenBtn,
                     savedSuccess && styles.saveToKitchenBtnSuccess,
-                    saveIngredientsMutation.isPending && styles.saveToKitchenBtnDisabled,
+                    (saveIngredientsMutation.isPending || !hasSelectedItems) && styles.saveToKitchenBtnDisabled,
                   ]}
                   activeOpacity={0.8}
                   onPress={() => saveIngredientsMutation.mutate()}
-                  disabled={saveIngredientsMutation.isPending || savedSuccess}
+                  disabled={saveIngredientsMutation.isPending || savedSuccess || !hasSelectedItems}
                   testID="save-shopping-list-btn"
                 >
                   {saveIngredientsMutation.isPending ? (
@@ -388,7 +391,9 @@ export default function RecipeDetailScreen() {
                       ? "Saving..."
                       : savedSuccess
                         ? "Saved to Kitchen!"
-                        : "Save to Kitchen"}
+                        : hasSelectedItems
+                          ? `Save ${checkedItems.size} item${checkedItems.size > 1 ? "s" : ""} to Kitchen`
+                          : "Select items to save"}
                   </Text>
                 </TouchableOpacity>
                 {saveIngredientsMutation.isError && (
