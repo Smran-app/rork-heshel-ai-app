@@ -30,6 +30,8 @@ import { useAuth } from "@/providers/AuthProvider";
 import { fetchIngredients, fetchRecipes, APIIngredient, APIRecipe } from "@/lib/api";
 import AddRecipeModal from "@/components/AddRecipeModal";
 
+type RecipeSource = "youtube" | "images";
+
 const INGREDIENT_CARD_WIDTH = 90;
 
 function getGreeting(): string {
@@ -47,8 +49,10 @@ export default function HomeScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
+  const [modalInitialTab, setModalInitialTab] = useState<RecipeSource>("youtube");
 
-  const handleOpenModal = useCallback(() => {
+  const handleOpenModal = useCallback((tab?: RecipeSource) => {
+    setModalInitialTab(tab ?? "youtube");
     setShowAddModal(true);
   }, []);
 
@@ -333,65 +337,98 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               ))
             ) : (
-              <TouchableOpacity
-                style={styles.emptyRecipeCard}
-                activeOpacity={0.85}
-                onPress={handleOpenModal}
-                testID="empty-recipe-add"
-              >
-                <LinearGradient
-                  colors={["#FFF8ED", "#FFF3D6"]}
-                  style={styles.emptyRecipeGradient}
+              <View style={styles.emptyRecipeCards}>
+                <TouchableOpacity
+                  style={styles.emptyRecipeCard}
+                  activeOpacity={0.85}
+                  onPress={() => handleOpenModal("youtube")}
+                  testID="empty-recipe-youtube"
                 >
-                  <View style={styles.emptyRecipeLeft}>
-                    <View style={styles.emptyRecipeIconRow}>
-                      <View style={[styles.emptyRecipeIconBadge, { backgroundColor: "#FF4444" }]}>
-                        <Youtube size={12} color={Colors.light.white} />
-                      </View>
+                  <LinearGradient
+                    colors={["#FFF8ED", "#FFF3D6"]}
+                    style={styles.emptyRecipeGradient}
+                  >
+                    <View style={[styles.emptyRecipeIconBadge, { backgroundColor: "#CC0000" }]}>
+                      <Youtube size={16} color={Colors.light.white} />
                     </View>
-                  </View>
-                  <View style={styles.emptyRecipeContent}>
-                    <Text style={styles.emptyRecipeTitle}>Save recipes you love</Text>
-                    <Text style={styles.emptyRecipeSubtitle}>
-                      Paste YouTube recipe links
-                    </Text>
-                    <Text style={styles.emptyRecipeUrl}>youtube.com/watch?v=abc123</Text>
-                  </View>
-                  <View style={styles.emptyRecipePlusWrap}>
-                    <Plus size={20} color={Colors.light.accent} />
-                  </View>
-                </LinearGradient>
-              </TouchableOpacity>
+                    <Text style={styles.emptyRecipeTitle}>From YouTube</Text>
+                    <Text style={styles.emptyRecipeSubtitle}>Paste video links</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.emptyRecipeCard}
+                  activeOpacity={0.85}
+                  onPress={() => handleOpenModal("images")}
+                  testID="empty-recipe-images"
+                >
+                  <LinearGradient
+                    colors={["#E8F5E0", "#D4E8CD"]}
+                    style={styles.emptyRecipeGradient}
+                  >
+                    <View style={[styles.emptyRecipeIconBadge, { backgroundColor: Colors.light.tint }]}>
+                      <Camera size={16} color={Colors.light.white} />
+                    </View>
+                    <Text style={styles.emptyRecipeTitle}>From Images</Text>
+                    <Text style={styles.emptyRecipeSubtitle}>Snap or upload</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
 
           {hasRecipes ? (
-            <TouchableOpacity
-              style={styles.addRecipeCard}
-              activeOpacity={0.85}
-              onPress={handleOpenModal}
-              testID="add-recipe-btn"
-            >
-              <LinearGradient
-                colors={["#FFF3D6", "#FFE8B8", "#FFDDA0"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.addRecipeGradient}
+            <View style={styles.addRecipeSection}>
+              <TouchableOpacity
+                style={styles.addRecipeCard}
+                activeOpacity={0.85}
+                onPress={() => handleOpenModal("youtube")}
+                testID="add-recipe-youtube-btn"
               >
-                <View style={styles.addRecipeIconWrap}>
-                  <Youtube size={22} color={Colors.light.white} />
-                </View>
-                <View style={styles.addRecipeContent}>
-                  <Text style={styles.addRecipeTitle}>Add a Recipe</Text>
-                  <Text style={styles.addRecipeSubtitle}>
-                    Paste YouTube links to save recipes
-                  </Text>
-                </View>
-                <View style={styles.addRecipePlusWrap}>
-                  <Plus size={20} color={Colors.light.accent} />
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
+                <LinearGradient
+                  colors={["#FFF3D6", "#FFE8B8", "#FFDDA0"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.addRecipeGradient}
+                >
+                  <View style={[styles.addRecipeIconWrap, { backgroundColor: "#CC0000" }]}>
+                    <Youtube size={20} color={Colors.light.white} />
+                  </View>
+                  <View style={styles.addRecipeContent}>
+                    <Text style={styles.addRecipeTitle}>From YouTube</Text>
+                    <Text style={styles.addRecipeSubtitle}>Paste video links</Text>
+                  </View>
+                  <View style={styles.addRecipePlusWrap}>
+                    <Plus size={18} color={Colors.light.accent} />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.addRecipeCard}
+                activeOpacity={0.85}
+                onPress={() => handleOpenModal("images")}
+                testID="add-recipe-images-btn"
+              >
+                <LinearGradient
+                  colors={["#E8F0E4", "#D4E8CD", "#C5DBC0"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.addRecipeGradient}
+                >
+                  <View style={[styles.addRecipeIconWrap, { backgroundColor: Colors.light.tint }]}>
+                    <Camera size={20} color={Colors.light.white} />
+                  </View>
+                  <View style={styles.addRecipeContent}>
+                    <Text style={styles.addRecipeTitle}>From Images</Text>
+                    <Text style={styles.addRecipeSubtitle}>Snap or upload photos</Text>
+                  </View>
+                  <View style={[styles.addRecipePlusWrap, { backgroundColor: "rgba(74,124,89,0.15)" }]}>
+                    <Plus size={18} color={Colors.light.tint} />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
           ) : null}
 
           <LinearGradient
@@ -418,6 +455,7 @@ export default function HomeScreen() {
       <AddRecipeModal
         visible={showAddModal}
         onClose={handleCloseModal}
+        initialTab={modalInitialTab}
       />
     </View>
   );
@@ -668,57 +706,39 @@ const styles = StyleSheet.create({
     fontWeight: "600" as const,
     color: Colors.light.tint,
   },
-  emptyRecipeCard: {
+  emptyRecipeCards: {
+    flexDirection: "row" as const,
+    gap: 10,
     marginBottom: 4,
   },
-  emptyRecipeGradient: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    borderRadius: 18,
-    padding: 16,
-    gap: 12,
-  },
-  emptyRecipeLeft: {
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  emptyRecipeIconRow: {
-    flexDirection: "row" as const,
-    gap: 4,
-  },
-  emptyRecipeIconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    justifyContent: "center" as const,
-    alignItems: "center" as const,
-  },
-  emptyRecipeContent: {
+  emptyRecipeCard: {
     flex: 1,
   },
+  emptyRecipeGradient: {
+    alignItems: "center" as const,
+    borderRadius: 18,
+    padding: 18,
+    gap: 8,
+    minHeight: 120,
+    justifyContent: "center" as const,
+  },
+  emptyRecipeIconBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+  },
   emptyRecipeTitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700" as const,
     color: Colors.light.text,
+    textAlign: "center" as const,
   },
   emptyRecipeSubtitle: {
     fontSize: 12,
     color: Colors.light.textSecondary,
-    marginTop: 2,
-  },
-  emptyRecipeUrl: {
-    fontSize: 11,
-    color: Colors.light.tabIconDefault,
-    marginTop: 4,
-    fontStyle: "italic" as const,
-  },
-  emptyRecipePlusWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(232,168,56,0.15)",
-    justifyContent: "center" as const,
-    alignItems: "center" as const,
+    textAlign: "center" as const,
   },
   recipeCard: {
     flexDirection: "row" as const,
@@ -809,41 +829,48 @@ const styles = StyleSheet.create({
     color: Colors.light.textSecondary,
     marginTop: 4,
   },
-  addRecipeCard: {
+  addRecipeSection: {
+    flexDirection: "row" as const,
+    gap: 10,
     marginBottom: 24,
   },
+  addRecipeCard: {
+    flex: 1,
+  },
   addRecipeGradient: {
-    flexDirection: "row" as const,
     alignItems: "center" as const,
     borderRadius: 18,
     padding: 16,
-    gap: 14,
+    gap: 8,
+    minHeight: 110,
+    justifyContent: "center" as const,
   },
   addRecipeIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: Colors.light.accent,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     justifyContent: "center" as const,
     alignItems: "center" as const,
   },
   addRecipeContent: {
-    flex: 1,
+    alignItems: "center" as const,
   },
   addRecipeTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "700" as const,
     color: Colors.light.text,
+    textAlign: "center" as const,
   },
   addRecipeSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.light.textSecondary,
-    marginTop: 2,
+    marginTop: 1,
+    textAlign: "center" as const,
   },
   addRecipePlusWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: "rgba(232,168,56,0.15)",
     justifyContent: "center" as const,
     alignItems: "center" as const,
