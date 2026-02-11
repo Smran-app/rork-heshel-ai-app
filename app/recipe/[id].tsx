@@ -24,6 +24,7 @@ import {
   Animated,
   Linking,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import Colors from "@/constants/colors";
@@ -65,6 +66,7 @@ export default function RecipeDetailScreen() {
   const router = useRouter();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
+  const [checkedLoaded, setCheckedLoaded] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const queryClient = useQueryClient();
 
@@ -99,6 +101,34 @@ export default function RecipeDetailScreen() {
   const shoppingItems = useMemo(() => {
     return ingredientsRequired.map(parseIngredientString);
   }, [ingredientsRequired]);
+
+  const storageKey = `shopping_checked_${id}`;
+
+  useEffect(() => {
+    if (!id) return;
+    AsyncStorage.getItem(storageKey)
+      .then((raw) => {
+        if (raw) {
+          try {
+            const arr: number[] = JSON.parse(raw);
+            setCheckedItems(new Set(arr));
+            console.log("[Recipe] Loaded persisted checked items for", id, arr.length, "items");
+          } catch (e) {
+            console.error("[Recipe] Failed to parse persisted checked items", e);
+          }
+        }
+      })
+      .catch((e) => console.error("[Recipe] Failed to load checked items", e))
+      .finally(() => setCheckedLoaded(true));
+  }, [id, storageKey]);
+
+  useEffect(() => {
+    if (!checkedLoaded) return;
+    const arr = Array.from(checkedItems);
+    AsyncStorage.setItem(storageKey, JSON.stringify(arr)).catch((e) =>
+      console.error("[Recipe] Failed to persist checked items", e)
+    );
+  }, [checkedItems, checkedLoaded, storageKey]);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
