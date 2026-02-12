@@ -486,6 +486,63 @@ export async function fetchRecipeIngredientsRequired(
   return [];
 }
 
+export interface DietaryRestrictions {
+  id: number;
+  user_id: string;
+  allergen: string | null;
+  diet_type: string | null;
+  custom: string | null;
+  created_at: string;
+}
+
+export async function fetchDietaryRestrictions(): Promise<DietaryRestrictions | null> {
+  console.log("[API] Fetching dietary restrictions");
+  try {
+    const response = await authFetch("/dietary");
+    const data = await response.json();
+    console.log("[API] Fetched dietary restrictions:", data);
+    return data;
+  } catch (err: any) {
+    if (err?.message?.includes("404")) {
+      console.log("[API] No dietary restrictions found");
+      return null;
+    }
+    throw err;
+  }
+}
+
+export interface DietaryPayload {
+  allergen?: string;
+  diet_type?: string;
+  custom?: string;
+}
+
+export async function createDietaryRestrictions(
+  payload: DietaryPayload
+): Promise<DietaryRestrictions> {
+  console.log("[API] Creating dietary restrictions:", payload);
+  const response = await authFetch("/dietary", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json();
+  console.log("[API] Created dietary restrictions:", data);
+  return data;
+}
+
+export async function updateDietaryRestrictions(
+  payload: DietaryPayload
+): Promise<DietaryRestrictions> {
+  console.log("[API] Updating dietary restrictions:", payload);
+  const response = await authFetch("/dietary", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json();
+  console.log("[API] Updated dietary restrictions:", data);
+  return data;
+}
+
 export async function processVideoCaption(videoId: string): Promise<any> {
   console.log("[API] Processing captions for:", videoId);
   const response = await authFetch(`/captions?video_id=${videoId}&analyze=true`, {

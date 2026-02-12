@@ -9,6 +9,7 @@ import {
   Leaf,
   X,
   Check,
+  Loader,
 } from "lucide-react-native";
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
@@ -20,9 +21,17 @@ import {
   Animated,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from "react-native";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import Colors from "@/constants/colors";
+import {
+  fetchDietaryRestrictions,
+  createDietaryRestrictions,
+  updateDietaryRestrictions,
+  DietaryPayload,
+} from "@/lib/api";
 
 interface DietaryItem {
   id: string;
@@ -54,6 +63,11 @@ const DIET_TYPES: DietaryItem[] = [
   { id: "low_carb", label: "Low Carb", icon: "wheat", color: "#CA8A04", bgColor: "#FEF9C3" },
 ];
 
+const ALL_KNOWN_IDS = [
+  ...COMMON_ALLERGIES.map((a) => a.id),
+  ...DIET_TYPES.map((d) => d.id),
+];
+
 function getIconComponent(iconName: string, color: string, size: number) {
   switch (iconName) {
     case "wheat": return <Wheat size={size} color={color} />;
@@ -67,12 +81,65 @@ function getIconComponent(iconName: string, color: string, size: number) {
   }
 }
 
+function parseCommaSeparated(val: string | null | undefined): string[] {
+  if (!val) return [];
+  return val
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 export default function DietaryRestrictionsScreen() {
+  const queryClient = useQueryClient();
   const [selectedAllergies, setSelectedAllergies] = useState<Set<string>>(new Set());
   const [selectedDiets, setSelectedDiets] = useState<Set<string>>(new Set());
   const [customRestriction, setCustomRestriction] = useState<string>("");
   const [customItems, setCustomItems] = useState<string[]>([]);
+  const [hasExisting, setHasExisting] = useState<boolean>(false);
+  const [initialLoaded, setInitialLoaded] = useState<boolean>(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const dietaryQuery = useQuery({
+    queryKey: ["dietary-restrictions"],
+    queryFn: fetchDietaryRestrictions,
+  });
+
+  useEffect(() => {
+    if (dietaryQuery.data && !initialLoaded) {
+      console.log("[Dietary] Populating from API data:", dietaryQuery.data);
+      setHasExisting(true);
+      setInitialLoaded(true);
+
+      const allergenItems = parseCommaSeparated(dietaryQuery.data.allergen);
+      const knownAllergens = new Set<string>();
+      const unknownAllergens: string[] = [];
+      allergenItems.forEach((item) => {
+        if (COMMON_ALLERGIES.find((a) => a.id === item || a.label.toLowerCase() === item)) {
+          const match = COMMON_ALLERGIES.find((a) => a.id === item || a.label.toLowerCase() === item);
+          if (match) knownAllergens.add(match.id);
+        } else {
+          unknownAllergens.push(item);
+        }
+      });
+      setSelectedAllergies(knownAllergens);
+
+      const dietItems = parseCommaSeparated(dietaryQuery.data.diet_type);
+      const knownDiets = new Set<string>();
+      dietItems.forEach((item) => {
+        const match = DIET_TYPES.find((d) => d.id === item || d.label.toLowerCase() === item);
+        if (match) knownDiets.add(match.id);
+      });
+      setSelectedDiets(knownDiets);
+
+      const customFromApi = parseCommaSeparated(dietaryQuery.data.custom);
+      const allCustom = [...unknownAllergens, ...customFromApi];
+      const uniqueCustom = [...new Set(allCustom)];
+      setCustomItems(uniqueCustom);
+    } else if (dietaryQuery.data === null && !initialLoaded) {
+      setInitialLoaded(true);
+      setHasExisting(false);
+    }
+  }, [dietaryQuery.data, initialLoaded]);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -81,6 +148,25 @@ export default function DietaryRestrictionsScreen() {
       useNativeDriver: true,
     }).start();
   }, []);
+
+  const saveMutation = useMutation({
+    mutationFn: async (payload: DietaryPayload) => {
+      if (hasExisting) {
+        return updateDietaryRestrictions(payload);
+      }
+      return createDietaryRestrictions(payload);
+    },
+    onSuccess: (data) => {
+      console.log("[Dietary] Save success:", data);
+      setHasExisting(true);
+      queryClient.invalidateQueries({ queryKey: ["dietary-restrictions"] });
+      Alert.alert("Saved", "Your dietary preferences have been updated.");
+    },
+    onError: (error: Error) => {
+      console.error("[Dietary] Save error:", error.message);
+      Alert.alert("Error", "Failed to save preferences. Please try again.");
+    },
+  });
 
   const toggleAllergy = useCallback((id: string) => {
     setSelectedAllergies((prev) => {
@@ -119,13 +205,48 @@ export default function DietaryRestrictionsScreen() {
   }, []);
 
   const handleSave = useCallback(() => {
-    const allergies = Array.from(selectedAllergies);
-    const diets = Array.from(selectedDiets);
-    console.log("[Dietary] Saving restrictions:", { allergies, diets, custom: customItems });
-    Alert.alert("Saved", "Your dietary preferences have been updated.");
-  }, [selectedAllergies, selectedDiets, customItems]);
+    const allergenList = Array.from(selectedAllergies);
+    const dietList = Array.from(selectedDiets);
+
+    const payload: DietaryPayload = {};
+
+    if (allergenList.length > 0) {
+      payload.allergen = allergenList.join(",");
+    } else {
+      payload.allergen = "";
+    }
+
+    if (dietList.length > 0) {
+      payload.diet_type = dietList.join(",");
+    } else {
+      payload.diet_type = "";
+    }
+
+    if (customItems.length > 0) {
+      payload.custom = customItems.join(",");
+    } else {
+      payload.custom = "";
+    }
+
+    console.log("[Dietary] Saving payload:", payload);
+    saveMutation.mutate(payload);
+  }, [selectedAllergies, selectedDiets, customItems, saveMutation]);
 
   const totalSelected = selectedAllergies.size + selectedDiets.size + customItems.length;
+  const isLoading = dietaryQuery.isLoading;
+  const isSaving = saveMutation.isPending;
+
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen options={{ title: "Dietary Restrictions" }} />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.light.tint} />
+          <Text style={styles.loadingText}>Loading preferences...</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -256,22 +377,30 @@ export default function DietaryRestrictionsScreen() {
         </Animated.View>
       </ScrollView>
 
-      {totalSelected > 0 && (
-        <View style={styles.bottomBar}>
+      <View style={styles.bottomBar}>
+        {totalSelected > 0 && (
           <View style={styles.bottomInfo}>
             <Text style={styles.bottomCount}>{totalSelected} selected</Text>
           </View>
-          <TouchableOpacity
-            style={styles.saveBtn}
-            activeOpacity={0.8}
-            onPress={handleSave}
-            testID="save-dietary-btn"
-          >
+        )}
+        {totalSelected === 0 && <View style={styles.bottomInfo} />}
+        <TouchableOpacity
+          style={[styles.saveBtn, isSaving && styles.saveBtnDisabled]}
+          activeOpacity={0.8}
+          onPress={handleSave}
+          disabled={isSaving}
+          testID="save-dietary-btn"
+        >
+          {isSaving ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
             <Check size={18} color="#fff" />
-            <Text style={styles.saveBtnText}>Save Preferences</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+          )}
+          <Text style={styles.saveBtnText}>
+            {isSaving ? "Saving..." : "Save Preferences"}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -284,6 +413,17 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingBottom: 100,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 15,
+    color: Colors.light.textSecondary,
+    fontWeight: "500" as const,
   },
   introSection: {
     alignItems: "center",
@@ -441,6 +581,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingVertical: 13,
     borderRadius: 16,
+  },
+  saveBtnDisabled: {
+    opacity: 0.6,
   },
   saveBtnText: {
     fontSize: 15,
