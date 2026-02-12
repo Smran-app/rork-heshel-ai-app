@@ -12,6 +12,7 @@ import {
   Circle,
   Save,
   CheckCircle,
+  TriangleAlert,
 } from "lucide-react-native";
 import React, { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import {
@@ -28,7 +29,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import Colors from "@/constants/colors";
-import { fetchRecipes, APIRecipe, fetchRecipeIngredientsRequired, bulkCreateIngredients, BulkIngredientPayload } from "@/lib/api";
+import { fetchRecipes, APIRecipe, fetchRecipeDetail, RecipeDetailData, bulkCreateIngredients, BulkIngredientPayload } from "@/lib/api";
+import { AlertTriangle } from "lucide-react-native";
 
 interface ParsedShoppingItem {
   name: string;
@@ -92,11 +94,14 @@ export default function RecipeDetailScreen() {
 
   const recipeId = rawRecipe?.id ?? 0;
 
-  const { data: ingredientsRequired = [], isLoading: shoppingLoading } = useQuery<string[]>({
-    queryKey: ["ingredientsRequired", recipeId],
-    queryFn: () => fetchRecipeIngredientsRequired(recipeId),
+  const { data: recipeDetail, isLoading: shoppingLoading } = useQuery<RecipeDetailData>({
+    queryKey: ["recipeDetail", recipeId],
+    queryFn: () => fetchRecipeDetail(recipeId),
     enabled: recipeId > 0,
   });
+
+  const ingredientsRequired = recipeDetail?.ingredients_required ?? [];
+  const dietaryWarnings = recipeDetail?.dietary_warnings ?? [];
 
   const shoppingItems = useMemo(() => {
     return ingredientsRequired.map(parseIngredientString);
@@ -261,6 +266,27 @@ export default function RecipeDetailScreen() {
               ) : null}
             </View>
           </View>
+
+          {dietaryWarnings.length > 0 && (
+            <View style={styles.warningCard}>
+              <View style={styles.warningHeaderRow}>
+                <View style={styles.warningIconWrap}>
+                  <TriangleAlert size={16} color="#B45309" />
+                </View>
+                <Text style={styles.warningTitle}>Dietary Warning</Text>
+              </View>
+              <Text style={styles.warningSubtext}>
+                This recipe contains ingredients that may conflict with your dietary preferences:
+              </Text>
+              <View style={styles.warningTagsRow}>
+                {dietaryWarnings.map((item, idx) => (
+                  <View key={idx} style={styles.warningTag}>
+                    <Text style={styles.warningTagText}>{item}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
 
           {recipe.video?.link ? (
             <TouchableOpacity style={styles.watchBtn} activeOpacity={0.8} onPress={openVideo}>
@@ -820,5 +846,57 @@ const styles = StyleSheet.create({
     color: "#EF4444",
     textAlign: "center" as const,
     marginTop: 6,
+  },
+  warningCard: {
+    marginHorizontal: 20,
+    marginTop: 14,
+    backgroundColor: "#FFFBEB",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#FDE68A",
+  },
+  warningHeaderRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 8,
+    marginBottom: 6,
+  },
+  warningIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: "#FEF3C7",
+    justifyContent: "center" as const,
+    alignItems: "center" as const,
+  },
+  warningTitle: {
+    fontSize: 15,
+    fontWeight: "700" as const,
+    color: "#92400E",
+  },
+  warningSubtext: {
+    fontSize: 13,
+    color: "#A16207",
+    lineHeight: 18,
+    marginBottom: 10,
+    marginLeft: 36,
+  },
+  warningTagsRow: {
+    flexDirection: "row" as const,
+    flexWrap: "wrap" as const,
+    gap: 8,
+    marginLeft: 36,
+  },
+  warningTag: {
+    backgroundColor: "#FDE68A",
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  warningTagText: {
+    fontSize: 13,
+    fontWeight: "600" as const,
+    color: "#92400E",
   },
 });

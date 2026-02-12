@@ -470,20 +470,39 @@ export async function imagesToRecipe(imageUris: string[]): Promise<any> {
   return data;
 }
 
-export async function fetchRecipeIngredientsRequired(
+export interface RecipeDetailData {
+  ingredients_required: string[];
+  dietary_warnings: string[];
+}
+
+export async function fetchRecipeDetail(
   recipeId: number
-): Promise<string[]> {
-  console.log("[API] Fetching ingredients_required for recipe:", recipeId);
+): Promise<RecipeDetailData> {
+  console.log("[API] Fetching recipe detail for:", recipeId);
   const response = await authFetch(`/recipes/${recipeId}`);
   const data = await response.json();
   console.log("[API] Recipe detail response keys:", Object.keys(data ?? {}));
 
-  if (data?.ingredients_required && Array.isArray(data.ingredients_required)) {
-    console.log("[API] Found ingredients_required:", data.ingredients_required.length);
-    return data.ingredients_required;
-  }
+  const ingredients_required =
+    data?.ingredients_required && Array.isArray(data.ingredients_required)
+      ? data.ingredients_required
+      : [];
+  const dietary_warnings =
+    data?.dietary_warnings && Array.isArray(data.dietary_warnings)
+      ? data.dietary_warnings
+      : [];
 
-  return [];
+  console.log("[API] Found ingredients_required:", ingredients_required.length);
+  console.log("[API] Found dietary_warnings:", dietary_warnings);
+
+  return { ingredients_required, dietary_warnings };
+}
+
+export async function fetchRecipeIngredientsRequired(
+  recipeId: number
+): Promise<string[]> {
+  const detail = await fetchRecipeDetail(recipeId);
+  return detail.ingredients_required;
 }
 
 export interface DietaryRestrictions {
