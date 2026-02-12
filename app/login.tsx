@@ -15,10 +15,9 @@ import {
   KeyboardAvoidingView,
   ScrollView,
 } from "react-native";
-import * as AppleAuthentication from "expo-apple-authentication";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Mail, Lock, User, ArrowRight } from "lucide-react-native";
-import { supabase } from "@/lib/supabase";
+
 import Colors from "@/constants/colors";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -26,12 +25,7 @@ type AuthMode = "login" | "signup";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
-  const {
-    signInWithGoogle,
-    signInWithAppleNative,
-    signInWithEmail,
-    signUpWithEmail,
-  } = useAuth();
+  const { signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail } = useAuth();
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState<string>("");
@@ -69,73 +63,20 @@ export default function LoginScreen() {
       setLoadingProvider("google");
       await signInWithGoogle();
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Something went wrong";
+      const message = err instanceof Error ? err.message : "Something went wrong";
       Alert.alert("Sign In Failed", message);
     } finally {
       setLoadingProvider(null);
     }
   };
 
-  const handleAppleNative = async () => {
+  const handleApple = async () => {
     try {
       setLoadingProvider("apple");
-      console.log("[Login] Starting native Apple Sign In");
-
-      const isAvailable = await AppleAuthentication.isAvailableAsync();
-      if (!isAvailable) {
-        throw new Error(
-          "Apple Sign In is not available on this device or environment. If you are using a simulator, please use a physical device.",
-        );
-      }
-
-      const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      });
-
-      if (!credential.identityToken) {
-        console.log("[Login] No identity token received from Apple");
-        throw new Error("No identity token received from Apple.");
-      }
-
-      const { error } = await signInWithAppleNative(credential.identityToken);
-
-      if (error) throw error;
-
-      // Handle user metadata update if name is provided (usually only on first sign-in)
-      if (credential.fullName) {
-        const nameParts = [];
-        if (credential.fullName.givenName)
-          nameParts.push(credential.fullName.givenName);
-        if (credential.fullName.middleName)
-          nameParts.push(credential.fullName.middleName);
-        if (credential.fullName.familyName)
-          nameParts.push(credential.fullName.familyName);
-        const fullName = nameParts.join(" ");
-
-        if (fullName.trim()) {
-          await supabase.auth.updateUser({
-            data: {
-              full_name: fullName,
-              given_name: credential.fullName.givenName,
-              family_name: credential.fullName.familyName,
-            },
-          });
-        }
-      }
-    } catch (err: any) {
-      console.error("[Login] Apple Sign In Error:", err);
-      if (err.code === "ERR_REQUEST_CANCELED") {
-        console.log("[Login] Apple Sign In canceled by user");
-        return;
-      }
-      const message =
-        err instanceof Error ? err.message : "Something went wrong";
-      const code = err.code ? ` (Code: ${err.code})` : "";
-      Alert.alert("Apple Sign In Failed", `${message}${code}`);
+      await signInWithApple();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      Alert.alert("Sign In Failed", message);
     } finally {
       setLoadingProvider(null);
     }
@@ -147,38 +88,23 @@ export default function LoginScreen() {
       return;
     }
     if (mode === "signup" && !name.trim()) {
-      Alert.alert(
-        "Missing Name",
-        "Please enter your name to create an account.",
-      );
+      Alert.alert("Missing Name", "Please enter your name to create an account.");
       return;
     }
     try {
       setLoadingProvider("email");
       if (mode === "signup") {
-        const result = await signUpWithEmail(
-          email.trim(),
-          password,
-          name.trim(),
-        );
+        const result = await signUpWithEmail(email.trim(), password, name.trim());
         if (result.session === null) {
-          Alert.alert(
-            "Check Your Email",
-            "We sent a confirmation link to your email. Please verify to continue.",
-          );
+          Alert.alert("Check Your Email", "We sent a confirmation link to your email. Please verify to continue.");
         }
       } else {
         await signInWithEmail(email.trim(), password);
       }
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Something went wrong";
+      const message = err instanceof Error ? err.message : "Something went wrong";
       const lowerMsg = message.toLowerCase();
-      if (
-        mode === "login" &&
-        (lowerMsg.includes("invalid login") ||
-          lowerMsg.includes("invalid credentials"))
-      ) {
+      if (mode === "login" && (lowerMsg.includes("invalid login") || lowerMsg.includes("invalid credentials"))) {
         Alert.alert(
           "Sign In Failed",
           "Invalid email or password. If you previously signed in with Google or Apple, please use that method instead.",
@@ -189,10 +115,7 @@ export default function LoginScreen() {
           "This email is already registered. Try signing in, or use Google/Apple if you originally signed up that way.",
         );
       } else {
-        Alert.alert(
-          mode === "signup" ? "Sign Up Failed" : "Sign In Failed",
-          message,
-        );
+        Alert.alert(mode === "signup" ? "Sign Up Failed" : "Sign In Failed", message);
       }
     } finally {
       setLoadingProvider(null);
@@ -255,12 +178,7 @@ export default function LoginScreen() {
                   onPress={() => setMode("login")}
                   activeOpacity={0.7}
                 >
-                  <Text
-                    style={[
-                      styles.tabText,
-                      mode === "login" && styles.tabTextActive,
-                    ]}
-                  >
+                  <Text style={[styles.tabText, mode === "login" && styles.tabTextActive]}>
                     Sign In
                   </Text>
                 </TouchableOpacity>
@@ -269,12 +187,7 @@ export default function LoginScreen() {
                   onPress={() => setMode("signup")}
                   activeOpacity={0.7}
                 >
-                  <Text
-                    style={[
-                      styles.tabText,
-                      mode === "signup" && styles.tabTextActive,
-                    ]}
-                  >
+                  <Text style={[styles.tabText, mode === "signup" && styles.tabTextActive]}>
                     Sign Up
                   </Text>
                 </TouchableOpacity>
@@ -366,39 +279,27 @@ export default function LoginScreen() {
               )}
             </TouchableOpacity>
 
-            {Platform.OS === "ios" && (
-              // <TouchableOpacity
-              //   style={styles.appleButton}
-              //   activeOpacity={0.8}
-              //   onPress={handleApple}
-              //   disabled={!!loadingProvider}
-              //   testID="apple-sign-in"
-              // >
-              //   {loadingProvider === "apple" ? (
-              //     <ActivityIndicator color="#FFFFFF" />
-              //   ) : (
-              //     <>
-              //       <Text style={styles.appleIcon}></Text>
-              //       <Text style={styles.appleText}>Continue with Apple</Text>
-              //     </>
-              //   )}
-              // </TouchableOpacity>
-              <AppleAuthentication.AppleAuthenticationButton
-                buttonType={
-                  AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN
-                }
-                buttonStyle={
-                  AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
-                }
-                cornerRadius={16}
-                style={styles.appleButtonNative}
-                onPress={handleAppleNative}
-              />
+            {Platform.OS !== "web" && (
+              <TouchableOpacity
+                style={styles.appleButton}
+                activeOpacity={0.8}
+                onPress={handleApple}
+                disabled={!!loadingProvider}
+                testID="apple-sign-in"
+              >
+                {loadingProvider === "apple" ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Text style={styles.appleIcon}></Text>
+                    <Text style={styles.appleText}>Continue with Apple</Text>
+                  </>
+                )}
+              </TouchableOpacity>
             )}
 
             <Text style={styles.disclaimer}>
-              By continuing, you agree to our Terms of Service and Privacy
-              Policy
+              By continuing, you agree to our Terms of Service and Privacy Policy
             </Text>
           </Animated.View>
         </ScrollView>
@@ -564,10 +465,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600" as const,
     color: "#FFFFFF",
-  },
-  appleButtonNative: {
-    width: "100%",
-    height: 54,
   },
   disclaimer: {
     fontSize: 12,

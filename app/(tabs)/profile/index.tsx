@@ -1,44 +1,20 @@
 import { Stack, useRouter } from "expo-router";
-import {
-  ChevronRight,
-  Heart,
-  CircleHelp,
-  LogOut,
-  ChefHat,
-  Leaf,
-  Flame,
-  Calendar,
-} from "lucide-react-native";
+import { ChevronRight, Heart, CircleHelp, LogOut, ChefHat, Leaf, Flame, Calendar } from "lucide-react-native";
 import React, { useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-  RefreshControl,
-  Image,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, RefreshControl } from "react-native";
 import { useQuery } from "@tanstack/react-query";
-import logo from "@/assets/images/icon.png";
+
 import Colors from "@/constants/colors";
 import { useAuth } from "@/providers/AuthProvider";
 import { fetchUserProfile } from "@/lib/api";
 
 const menuItems = [
-  {
-    icon: Heart,
-    label: "Dietary Restrictions",
-    id: "diet",
-    route: "/dietary-restrictions",
-  },
+  { icon: Heart, label: "Dietary Restrictions", id: "diet", route: "/dietary-restrictions" },
   { icon: CircleHelp, label: "Help & Support", id: "help", route: null },
 ];
 
 export default function ProfileScreen() {
-  const { user, signOut, isHeshelPro } = useAuth();
+  const { user, signOut } = useAuth();
   const router = useRouter();
 
   const profileQuery = useQuery({
@@ -50,21 +26,17 @@ export default function ProfileScreen() {
   const profile = profileQuery.data;
   const counts = profile?.counts;
 
-  const displayName =
-    profile?.user?.user_metadata?.full_name ??
-    profile?.user?.user_metadata?.display_name ??
-    user?.user_metadata?.full_name ??
-    user?.email?.split("@")[0] ??
-    "Chef";
+  const displayName = profile?.user?.user_metadata?.full_name
+    ?? profile?.user?.user_metadata?.display_name
+    ?? user?.user_metadata?.full_name
+    ?? user?.email?.split("@")[0]
+    ?? "Chef";
   const displayEmail = profile?.user?.email ?? user?.email ?? "";
   const initials = displayName.charAt(0).toUpperCase();
 
   const provider = profile?.user?.app_metadata?.provider ?? "email";
   const memberSince = profile?.user?.created_at
-    ? new Date(profile.user.created_at).toLocaleDateString("en-US", {
-        month: "long",
-        year: "numeric",
-      })
+    ? new Date(profile.user.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })
     : null;
 
   const handleSignOut = async () => {
@@ -96,14 +68,7 @@ export default function ProfileScreen() {
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{initials}</Text>
           </View>
-          <View style={styles.nameRow}>
-            <Text style={styles.name}>{displayName}</Text>
-            {isHeshelPro && (
-              <View style={styles.proBadge}>
-                <Text style={styles.proText}>PRO</Text>
-              </View>
-            )}
-          </View>
+          <Text style={styles.name}>{displayName}</Text>
           <Text style={styles.email}>{displayEmail}</Text>
           {memberSince && (
             <View style={styles.memberRow}>
@@ -114,32 +79,9 @@ export default function ProfileScreen() {
           {provider !== "email" && (
             <View style={styles.providerBadge}>
               <Text style={styles.providerText}>
-                Signed in via{" "}
-                {provider.charAt(0).toUpperCase() + provider.slice(1)}
+                Signed in via {provider.charAt(0).toUpperCase() + provider.slice(1)}
               </Text>
             </View>
-          )}
-
-          {!isHeshelPro && (
-            <TouchableOpacity
-              style={styles.upgradeButton}
-              activeOpacity={0.8}
-              onPress={() => router.push("/paywall" as any)}
-            >
-              <View style={styles.upgradeContent}>
-                <View style={styles.upgradeIcon}>
-                  {/* <ChefHat size={20} color={Colors.light.white} /> */}
-                  <Image source={logo} style={{ width: 40, height: 40 }} />
-                </View>
-                <View>
-                  <Text style={styles.upgradeTitle}>Upgrade to Heshel Pro</Text>
-                  <Text style={styles.upgradeSubtitle}>
-                    Get unlimited recipes & more
-                  </Text>
-                </View>
-              </View>
-              <ChevronRight size={20} color={Colors.light.white} />
-            </TouchableOpacity>
           )}
         </View>
 
@@ -151,35 +93,21 @@ export default function ProfileScreen() {
           ) : (
             <>
               <View style={styles.statCard}>
-                <View
-                  style={[
-                    styles.statIconWrap,
-                    { backgroundColor: Colors.light.tintLight },
-                  ]}
-                >
+                <View style={[styles.statIconWrap, { backgroundColor: Colors.light.tintLight }]}>
                   <Leaf size={18} color={Colors.light.tint} />
                 </View>
-                <Text style={styles.statNumber}>
-                  {counts?.ingredients ?? 0}
-                </Text>
+                <Text style={styles.statNumber}>{counts?.ingredients ?? 0}</Text>
                 <Text style={styles.statLabel}>Ingredients</Text>
               </View>
               <View style={styles.statCard}>
-                <View
-                  style={[
-                    styles.statIconWrap,
-                    { backgroundColor: Colors.light.accentLight },
-                  ]}
-                >
+                <View style={[styles.statIconWrap, { backgroundColor: Colors.light.accentLight }]}>
                   <ChefHat size={18} color={Colors.light.accent} />
                 </View>
                 <Text style={styles.statNumber}>{counts?.recipes ?? 0}</Text>
                 <Text style={styles.statLabel}>Recipes</Text>
               </View>
               <View style={styles.statCard}>
-                <View
-                  style={[styles.statIconWrap, { backgroundColor: "#FDEAEA" }]}
-                >
+                <View style={[styles.statIconWrap, { backgroundColor: "#FDEAEA" }]}>
                   <Flame size={18} color={Colors.light.danger} />
                 </View>
                 <Text style={styles.statNumber}>{counts?.cooked ?? 0}</Text>
@@ -196,9 +124,7 @@ export default function ProfileScreen() {
               style={styles.menuItem}
               activeOpacity={0.7}
               testID={`menu-${item.id}`}
-              onPress={() =>
-                item.route ? router.push(item.route as any) : null
-              }
+              onPress={() => item.route ? router.push(item.route as any) : null}
             >
               <item.icon size={20} color={Colors.light.tint} />
               <Text style={styles.menuLabel}>{item.label}</Text>
@@ -248,17 +174,6 @@ const styles = StyleSheet.create({
     fontWeight: "700" as const,
     color: Colors.light.tint,
   },
-  signOutText: {
-    fontSize: 15,
-    fontWeight: "600" as const,
-    color: Colors.light.danger,
-  },
-  nameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 2,
-  },
   name: {
     fontSize: 22,
     fontWeight: "700" as const,
@@ -290,50 +205,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "600" as const,
     color: Colors.light.tint,
-  },
-  proBadge: {
-    backgroundColor: Colors.light.accent,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  proText: {
-    fontSize: 10,
-    fontWeight: "800" as const,
-    color: Colors.light.white,
-  },
-  upgradeButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.light.tint,
-    marginTop: 20,
-    padding: 16,
-    borderRadius: 16,
-    justifyContent: "space-between",
-    width: "90%",
-  },
-  upgradeContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  upgradeIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  upgradeTitle: {
-    fontSize: 16,
-    fontWeight: "700" as const,
-    color: Colors.light.white,
-  },
-  upgradeSubtitle: {
-    fontSize: 12,
-    color: "rgba(255, 255, 255, 0.8)",
-    marginTop: 1,
   },
   statsRow: {
     flexDirection: "row",
@@ -406,5 +277,10 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: Colors.light.white,
     gap: 10,
+  },
+  signOutText: {
+    fontSize: 15,
+    fontWeight: "600" as const,
+    color: Colors.light.danger,
   },
 });
