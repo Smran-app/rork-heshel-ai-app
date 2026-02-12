@@ -27,7 +27,12 @@ import { useRouter } from "expo-router";
 
 import Colors from "@/constants/colors";
 import { useAuth } from "@/providers/AuthProvider";
-import { fetchIngredients, fetchRecipes, APIIngredient, APIRecipe } from "@/lib/api";
+import {
+  fetchIngredients,
+  fetchRecipes,
+  APIIngredient,
+  APIRecipe,
+} from "@/lib/api";
 import AddRecipeModal from "@/components/AddRecipeModal";
 
 type RecipeSource = "youtube" | "images";
@@ -49,7 +54,8 @@ export default function HomeScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
-  const [modalInitialTab, setModalInitialTab] = useState<RecipeSource>("youtube");
+  const [modalInitialTab, setModalInitialTab] =
+    useState<RecipeSource>("youtube");
 
   const handleOpenModal = useCallback((tab?: RecipeSource) => {
     setModalInitialTab(tab ?? "youtube");
@@ -60,12 +66,16 @@ export default function HomeScreen() {
     setShowAddModal(false);
   }, []);
 
-  const { data: ingredients = [], isLoading: ingredientsLoading } = useQuery<APIIngredient[]>({
+  const { data: ingredients = [], isLoading: ingredientsLoading } = useQuery<
+    APIIngredient[]
+  >({
     queryKey: ["ingredients"],
     queryFn: fetchIngredients,
   });
 
-  const { data: recipes = [], isLoading: recipesLoading } = useQuery<APIRecipe[]>({
+  const { data: recipes = [], isLoading: recipesLoading } = useQuery<
+    APIRecipe[]
+  >({
     queryKey: ["recipes"],
     queryFn: fetchRecipes,
   });
@@ -103,7 +113,9 @@ export default function HomeScreen() {
         >
           <View style={styles.headerRow}>
             <View style={styles.headerText}>
-              <Text style={styles.greeting}>{getGreeting()}, {firstName}</Text>
+              <Text style={styles.greeting}>
+                {getGreeting()}, {firstName}
+              </Text>
               <Text style={styles.subtitle}>
                 What would you like to cook today?
               </Text>
@@ -111,7 +123,11 @@ export default function HomeScreen() {
           </View>
 
           {hasIngredients ? (
-            <TouchableOpacity activeOpacity={0.85} testID="cook-suggestion-card" onPress={() => router.push("/cook-feed" as any)}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              testID="cook-suggestion-card"
+              onPress={() => router.push("/cook-feed" as any)}
+            >
               <LinearGradient
                 colors={["#C5DBC0", "#D9ECCC", "#E8F5E0"]}
                 start={{ x: 0, y: 0 }}
@@ -130,14 +146,18 @@ export default function HomeScreen() {
                   </View>
                 </View>
                 <Image
-                  source={require("@/assets/images/mascot.png")}
+                  source={require("@/assets/images/icon.png")}
                   style={styles.mascotLarge}
                   contentFit="contain"
                 />
               </LinearGradient>
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity activeOpacity={0.85} testID="cook-suggestion-card-locked" onPress={navigateToKitchen}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              testID="cook-suggestion-card-locked"
+              onPress={navigateToKitchen}
+            >
               <LinearGradient
                 colors={["#C5DBC0", "#D9ECCC", "#E8F5E0"]}
                 start={{ x: 0, y: 0 }}
@@ -159,7 +179,9 @@ export default function HomeScreen() {
                   </View>
                   <View style={styles.addIngredientsBtn}>
                     <Lock size={14} color={Colors.light.white} />
-                    <Text style={styles.addIngredientsBtnText}>Add ingredients</Text>
+                    <Text style={styles.addIngredientsBtnText}>
+                      Add ingredients
+                    </Text>
                   </View>
                 </View>
                 <Image
@@ -173,7 +195,9 @@ export default function HomeScreen() {
 
           {hasIngredients ? (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>What&apos;s in your kitchen?</Text>
+              <Text style={styles.sectionTitle}>
+                What&apos;s in your kitchen?
+              </Text>
               {ingredientsLoading ? (
                 <View style={styles.ingredientLoading}>
                   <ActivityIndicator size="small" color={Colors.light.tint} />
@@ -199,15 +223,26 @@ export default function HomeScreen() {
                             contentFit="cover"
                           />
                         ) : (
-                          <View style={[styles.ingredientImage, styles.ingredientPlaceholder]}>
+                          <View
+                            style={[
+                              styles.ingredientImage,
+                              styles.ingredientPlaceholder,
+                            ]}
+                          >
                             <Text style={styles.ingredientPlaceholderText}>
-                              {(item.global?.name ?? item.name).charAt(0).toUpperCase()}
+                              {(item.global?.name ?? item.name)
+                                .charAt(0)
+                                .toUpperCase()}
                             </Text>
                           </View>
                         )}
                       </View>
-                      <Text style={styles.ingredientName}>{item.global?.name ?? item.name}</Text>
-                      <Text style={styles.ingredientQty}>{item.quantity} {item.unit}</Text>
+                      <Text style={styles.ingredientName}>
+                        {item.global?.name ?? item.name}
+                      </Text>
+                      <Text style={styles.ingredientQty}>
+                        {item.quantity} {item.unit}
+                      </Text>
                     </TouchableOpacity>
                   )}
                 />
@@ -219,7 +254,8 @@ export default function HomeScreen() {
                 Your kitchen is empty {"\u2014"} let&apos;s fix that
               </Text>
               <Text style={styles.emptyKitchenSubtitle}>
-                Add ingredients you already have and Heshel will suggest what you can cook right away.
+                Add ingredients you already have and Heshel will suggest what
+                you can cook right away.
               </Text>
 
               <View style={styles.emptyKitchenActions}>
@@ -232,7 +268,9 @@ export default function HomeScreen() {
                   <View style={styles.emptyActionIcon}>
                     <ScanLine size={18} color={Colors.light.tint} />
                   </View>
-                  <Text style={styles.emptyActionText}>Scan a grocery bill</Text>
+                  <Text style={styles.emptyActionText}>
+                    Scan a grocery bill
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -244,11 +282,15 @@ export default function HomeScreen() {
                   <View style={styles.emptyActionIcon}>
                     <Camera size={18} color={Colors.light.accent} />
                   </View>
-                  <Text style={styles.emptyActionText}>Upload fridge photo</Text>
+                  <Text style={styles.emptyActionText}>
+                    Upload fridge photo
+                  </Text>
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.emptyKitchenHint}>Start with just 3-5 items</Text>
+              <Text style={styles.emptyKitchenHint}>
+                Start with just 3-5 items
+              </Text>
 
               <TouchableOpacity
                 style={styles.manualAddBtn}
@@ -286,7 +328,12 @@ export default function HomeScreen() {
                   style={styles.recipeCard}
                   activeOpacity={0.8}
                   testID={`recipe-${recipe.id}`}
-                  onPress={() => router.push({ pathname: "/recipe/[id]", params: { id: String(recipe.id) } })}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/recipe/[id]",
+                      params: { id: String(recipe.id) },
+                    })
+                  }
                 >
                   {recipe.video?.thumbnail_url ? (
                     <View style={styles.recipeImageWrap}>
@@ -296,7 +343,11 @@ export default function HomeScreen() {
                         contentFit="cover"
                       />
                       <View style={styles.playBadge}>
-                        <Play size={12} color={Colors.light.white} fill={Colors.light.white} />
+                        <Play
+                          size={12}
+                          color={Colors.light.white}
+                          fill={Colors.light.white}
+                        />
                       </View>
                     </View>
                   ) : recipe.image ? (
@@ -306,7 +357,12 @@ export default function HomeScreen() {
                       contentFit="cover"
                     />
                   ) : (
-                    <View style={[styles.recipeImage, styles.recipeImagePlaceholder]}>
+                    <View
+                      style={[
+                        styles.recipeImage,
+                        styles.recipeImagePlaceholder,
+                      ]}
+                    >
                       <Text style={styles.recipeImagePlaceholderText}>
                         {recipe.name.charAt(0)}
                       </Text>
@@ -319,19 +375,25 @@ export default function HomeScreen() {
                     <View style={styles.recipeMetaRow}>
                       {recipe.cuisine_type ? (
                         <View style={styles.cuisineBadge}>
-                          <Text style={styles.cuisineBadgeText}>{recipe.cuisine_type}</Text>
+                          <Text style={styles.cuisineBadgeText}>
+                            {recipe.cuisine_type}
+                          </Text>
                         </View>
                       ) : null}
                       {recipe.effort_level ? (
                         <View style={styles.effortBadge}>
                           <Flame size={10} color={Colors.light.accent} />
-                          <Text style={styles.effortText}>{recipe.effort_level}</Text>
+                          <Text style={styles.effortText}>
+                            {recipe.effort_level}
+                          </Text>
                         </View>
                       ) : null}
                     </View>
                     <Text style={styles.recipeSource}>
                       {recipe.ingredients.length} ingredients
-                      {recipe.video?.author_name ? ` · ${recipe.video.author_name}` : ""}
+                      {recipe.video?.author_name
+                        ? ` · ${recipe.video.author_name}`
+                        : ""}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -348,11 +410,18 @@ export default function HomeScreen() {
                     colors={["#FFF8ED", "#FFF3D6"]}
                     style={styles.emptyRecipeGradient}
                   >
-                    <View style={[styles.emptyRecipeIconBadge, { backgroundColor: "#CC0000" }]}>
+                    <View
+                      style={[
+                        styles.emptyRecipeIconBadge,
+                        { backgroundColor: "#CC0000" },
+                      ]}
+                    >
                       <Youtube size={16} color={Colors.light.white} />
                     </View>
                     <Text style={styles.emptyRecipeTitle}>From YouTube</Text>
-                    <Text style={styles.emptyRecipeSubtitle}>Paste video links</Text>
+                    <Text style={styles.emptyRecipeSubtitle}>
+                      Paste video links
+                    </Text>
                   </LinearGradient>
                 </TouchableOpacity>
 
@@ -366,11 +435,18 @@ export default function HomeScreen() {
                     colors={["#E8F5E0", "#D4E8CD"]}
                     style={styles.emptyRecipeGradient}
                   >
-                    <View style={[styles.emptyRecipeIconBadge, { backgroundColor: Colors.light.tint }]}>
+                    <View
+                      style={[
+                        styles.emptyRecipeIconBadge,
+                        { backgroundColor: Colors.light.tint },
+                      ]}
+                    >
                       <Camera size={16} color={Colors.light.white} />
                     </View>
                     <Text style={styles.emptyRecipeTitle}>From Images</Text>
-                    <Text style={styles.emptyRecipeSubtitle}>Snap or upload</Text>
+                    <Text style={styles.emptyRecipeSubtitle}>
+                      Snap or upload
+                    </Text>
                   </LinearGradient>
                 </TouchableOpacity>
               </View>
@@ -391,12 +467,19 @@ export default function HomeScreen() {
                   end={{ x: 1, y: 1 }}
                   style={styles.addRecipeGradient}
                 >
-                  <View style={[styles.addRecipeIconWrap, { backgroundColor: "#CC0000" }]}>
+                  <View
+                    style={[
+                      styles.addRecipeIconWrap,
+                      { backgroundColor: "#CC0000" },
+                    ]}
+                  >
                     <Youtube size={20} color={Colors.light.white} />
                   </View>
                   <View style={styles.addRecipeContent}>
                     <Text style={styles.addRecipeTitle}>From YouTube</Text>
-                    <Text style={styles.addRecipeSubtitle}>Paste video links</Text>
+                    <Text style={styles.addRecipeSubtitle}>
+                      Paste video links
+                    </Text>
                   </View>
                   <View style={styles.addRecipePlusWrap}>
                     <Plus size={18} color={Colors.light.accent} />
@@ -416,14 +499,26 @@ export default function HomeScreen() {
                   end={{ x: 1, y: 1 }}
                   style={styles.addRecipeGradient}
                 >
-                  <View style={[styles.addRecipeIconWrap, { backgroundColor: Colors.light.tint }]}>
+                  <View
+                    style={[
+                      styles.addRecipeIconWrap,
+                      { backgroundColor: Colors.light.tint },
+                    ]}
+                  >
                     <Camera size={20} color={Colors.light.white} />
                   </View>
                   <View style={styles.addRecipeContent}>
                     <Text style={styles.addRecipeTitle}>From Images</Text>
-                    <Text style={styles.addRecipeSubtitle}>Snap or upload photos</Text>
+                    <Text style={styles.addRecipeSubtitle}>
+                      Snap or upload photos
+                    </Text>
                   </View>
-                  <View style={[styles.addRecipePlusWrap, { backgroundColor: "rgba(74,124,89,0.15)" }]}>
+                  <View
+                    style={[
+                      styles.addRecipePlusWrap,
+                      { backgroundColor: "rgba(74,124,89,0.15)" },
+                    ]}
+                  >
                     <Plus size={18} color={Colors.light.tint} />
                   </View>
                 </LinearGradient>
@@ -439,7 +534,8 @@ export default function HomeScreen() {
               We&apos;ll build your shopping list
             </Text>
             <Text style={styles.shoppingSubtitle}>
-              Once you add ingredients or recipes, Heshel creates a smart shopping list automatically.
+              Once you add ingredients or recipes, Heshel creates a smart
+              shopping list automatically.
             </Text>
             <TouchableOpacity
               style={styles.shoppingButton}
@@ -526,8 +622,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   mascotLarge: {
-    width: 140,
-    height: 140,
+    width: 100,
+    height: 100,
     marginLeft: -10,
   },
   dotRow: {

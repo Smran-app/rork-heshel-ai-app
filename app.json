@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Heshel AI App",
+    "name": "Heshel",
     "slug": "heshel-ai-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "rork-app",
+    "scheme": "com.heshel.app",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,7 +15,11 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.heshel.app"
+      "bundleIdentifier": "com.heshel.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "appleTeamId": "M7U9K2DATN"
     },
     "android": {
       "adaptiveIcon": {
@@ -36,10 +40,19 @@
       ],
       "expo-font",
       "expo-web-browser",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": "https://rork.com/"
+      },
+      "eas": {
+        "projectId": "da3b2a9b-89fb-46b1-8a98-a1ad4037dec5"
+      }
     }
   }
 }
